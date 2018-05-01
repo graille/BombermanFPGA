@@ -27,12 +27,8 @@ architecture behavioural of game_controller is
     -- 4..6 = breakeable block type 0,1,2
 
     -- 7..9 = Bombs type 0,1,2
-    -- 10 : Explosion, State is color 
-	    --	0 : Yellow
-	    --	1 : Blue
-	    --	2 : Red
-	    --	3 : Green
-    -- from 11 to 31 : Bonus of malus blocks
+    -- 10-14 : Explosion
+    -- from 15 to 31 : Bonus of malus blocks
     constant EMPTY_BLOCK : block_type := (0,0,0);
     constant UNBREAKABLE_BLOCK_0 : block_type := (1,0,0);
     constant UNBREAKABLE_BLOCK_1 : block_type := (2,0,0);
@@ -74,13 +70,24 @@ architecture behavioural of game_controller is
     -- Components
     component collision_detector_rect_rect
     port(
-        x_pos, y_pos : in vector;
-        x_dim, y_dim : in vector;
+        o_pos, t_pos : in vector;
+        o_dim, t_dim : in vector;
         is_colliding : out std_logic
     );
     end component;
     
-    signal tmp, millisecond : positive range 0 to 2**32 - 1;
+    component millisecond_counter is
+        generic(
+            DATA_LENGTH : integer := 21; -- 21 bits = 34 minutes
+            FREQUENCY : integer := 100000000
+        );
+        port(
+            CLK, RST : in std_logic;
+            timer : out integer range 0 to 2**DATA_LENGTH - 1
+        );
+    end component;
+    
+    signal millisecond : positive range 0 to 2**21 - 1;
 begin
 
 --grid <= cubes_grid;
@@ -89,32 +96,27 @@ phy_position <= (to_integer(to_unsigned(i, 16) sll 12), to_integer(to_unsigned(j
 PHY_ENGINES_GENERATOR : for k in 0 to NB_PLAYERS - 1 generate
     PHY_ENGINE:collision_detector_rect_rect
     port map(
-        x_pos => players_positions(k),
-        x_dim => player_hitbox,
-        y_pos => phy_position,
-        y_dim => (4096, 4096),
+        o_pos => players_positions(k),
+        o_dim => player_hitbox,
+        t_pos => phy_position,
+        t_dim => (4096, 4096),
         is_colliding => players_collision(k)
     );
 end generate;
 
 -- Millisecond counter
-process(CLK)
-begin
-    if rising_edge(CLK) then
-        if rst = '1' then
-            tmp <= 0;
-        else
-            tmp <= (tmp + 1) mod FREQUENCY / 1000;
-            
-            if tmp = 0 then
-                millisecond <= (millisecond + 1) mod 2**32;
-            end if;
-        end if;
-    end if;
-end process;
+COUNTER_ENGINE:millisecond_counter
+generic map (
+    FREQUENCY => FREQUENCY
+)
+port map(
+    CLK => CLK,
+    RST => RST,
+    timer => millisecond
+);
 
 process(CLK)
-    constant sec_per_move : positive := 2;
+    constant millisec_per_move : positive := 1000;
 begin
     if rising_edge(CLK) then
         if rst = '1' then
@@ -122,10 +124,7 @@ begin
             GAME_STATE <= STATE_MAP_INIT;
             game_end <= '0';
             game_winner <= 0;
-            tmp <= 0;
         else
-            tmp <= (tmp + 1) mod 2**32;
-            
             if GAME_STATE = STATE_MENU_LOADING then
                 GAME_STATE <= STATE_MAP_INIT;
             elsif GAME_STATE = STATE_MAP_INIT then
@@ -165,8 +164,7 @@ begin
                     end if;
                 end if;
             elsif GAME_STATE = STATE_DEATH_MODE then
-                if tmp = (sec_per_move * FREQUENCY) - 1 then
-                    tmp <= 0;
+                if (millisecond mod millisec_per_move) = 0 then
                     cubes_grid(i, j) <= UNBREAKABLE_BLOCK_0;
 
                     if i = ROWS - 1 and j = COLS - 1 then

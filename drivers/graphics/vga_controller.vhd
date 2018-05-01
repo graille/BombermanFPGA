@@ -21,8 +21,8 @@ use IEEE.std_logic_unsigned.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library UNISIM;
+use UNISIM.VComponents.all;
 
 entity VGA_CONTROLLER is
     Port ( CLK_I : in  STD_LOGIC;
