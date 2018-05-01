@@ -1,63 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
-package PROJECT_PARAMS is
-    constant NB_PLAYERS : integer := 4;
-    constant ROWS : integer := 12;
-    constant COLS : integer := 16;
-
-    constant MILLISECOND_COUNTER_PRECISION : integer := 16;
-    constant CLK_COUNTER_PRECISION : integer := 32;
-
-    constant VECTOR_PRECISION : integer := 16;
-
-    constant STATE_PRECISION : integer := 8;
-
-    -- O-----> Y axis
-    -- |
-    -- |
-    -- X axis
-
-    -- Game parameters
-    constant NORMAL_MODE_DURATION : integer := 5 * 60 * 1000;
-    constant DEATH_MODE_DURATION : integer := 60 * 1000;
-end package;
-
-package PROJECT_GAME_STATES is
-    -- Choices
-    constant STATE_START : integer := 0;
-    constant STATE_MENU_LOADING : integer := 1;
-    constant STATE_MAP_INIT : integer := 2;
-    constant STATE_GAME : integer := 3;
-        constant STATE_GAME_PLAYERS_BOMB_CHECK : integer := 4;
-        constant STATE_GAME_GRID_UPDATE : integer := 5;
-            constant STATE_GAME_BOMB_EXPLODE : integer := 6;
-        constant STATE_GAME_CHECK_PLAYERS_DOG : integer := 7;
-    constant STATE_DEATH_MODE : integer := 8;
-        constant STATE_DEATH_MODE_PLACE_BLOCK : integer := 9;
-        constant STATE_DEATH_MODE_CHECK_DEATH : integer := 10;
-    constant STATE_GAME_OVER : integer := 11;
-
-
-    subtype game_state_type is integer range 0 to STATE_GAME_OVER;
-end package;
-
-
-package PROJECT_RECT_PKG is
-    constant UP : integer range 0 to 3 := 0;
-    constant RIGHT : integer range 0 to 3 := 1;
-    constant DOWN : integer range 0 to 3 := 2;
-    constant LEFT : integer range 0 to 3 := 3;
-end package;
-
-package PROJECT_BLOCKS_PKG is
-end package;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.PROJECT_PARAMS.all;
+use work.PROJECT_PARAMS_PKG.all;
 
 package PROJECT_TYPES_PKG is
     -- Timer types
@@ -73,13 +17,14 @@ package PROJECT_TYPES_PKG is
 
         -- 7..9 = Bombs type 0,1,2
         -- 10-12 : Explosion
-        -- from 13 to 31 : Bonus of malus blocks
+        -- from 13 to 31 : Bonus and malus blocks
     subtype block_category_type is natural range 0 to 31;
     type block_type is record
-	    category	    : block_category_type;
-	    state		    : natural range 0 to STATE_PRECISION - 1;
-	    direction		: natural range 0 to 3; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
-        last_update     : millisecond_count
+	    category	    : block_category_type;                        -- The block category (see dedicated package)
+	    state		    : natural range 0 to 2**STATE_PRECISION - 1;  -- The state of animation of the block
+	    direction		: natural range 0 to 3;                       -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
+        last_update     : millisecond_count;                          -- Last time the block has been updated, usefull to manage animations
+        owner : natural range 0 to NB_PLAYERS - 1;                    -- Only used by bombs and explosions to assign points to players
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
 

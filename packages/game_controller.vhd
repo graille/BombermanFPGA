@@ -25,6 +25,9 @@ entity game_controller is
 end game_controller;
 
 architecture behavioural of game_controller is
+    constant EMPTY_BLOCK : block_type := (0,0,0);
+
+
     signal GAME_STATE : integer range 0 to 2**3 - 1 := STATE_MENU_LOADING;
 
     -- Physic engine signals
