@@ -1,15 +1,11 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use work.PROJECT_PARAMS.all;
 use work.PROJECT_TYPES_PKG.all;
 
 entity game_controller is
     generic(
-        ROWS : integer := 12;
-        COLS : integer := 16;
-        FREQUENCY : integer := 10**8;
-        NB_PLAYERS : integer := 4;
-
         SEED_LENGTH : integer := 16
     );
     port(
@@ -29,19 +25,8 @@ entity game_controller is
 end game_controller;
 
 architecture behavioural of game_controller is
-
     constant EMPTY_BLOCK : block_type := (0,0,0);
-    constant UNBREAKABLE_BLOCK_0 : block_type := (1,0,0);
-    constant UNBREAKABLE_BLOCK_1 : block_type := (2,0,0);
-    signal cubes_grid : td_array_cube_types(ROWS - 1 downto 0, COLS - 1 downto 0);
 
-    -- Choices
-    constant STATE_START : integer := 0;
-    constant STATE_MENU_LOADING : integer := 1;
-    constant STATE_MAP_INIT : integer := 2;
-    constant STATE_GAME : integer := 3;
-    constant STATE_DEATH_MODE : integer := 4;
-    constant STATE_GAME_OVER : integer := 5;
 
     signal GAME_STATE : integer range 0 to 2**3 - 1 := STATE_MENU_LOADING;
 
@@ -50,39 +35,14 @@ architecture behavioural of game_controller is
     signal j : integer range 0 to COLS - 1 := 0;
     signal phy_position: vector := (others => 0);
 
-    -- Players states
-    signal players_collision : players_status_type := (others => '1');
-
-    -- Components
-    component collision_detector_rect_rect
-    port(
-        o_pos, t_pos : in vector;
-        o_dim, t_dim : in vector;
-        is_colliding : out std_logic
-    );
-    end component;
-
-    component millisecond_counter is
-        generic(
-            DATA_LENGTH : integer := 21; -- 21 bits = 34 minutes
-            FREQUENCY : integer := 100000000
-        );
-        port(
-            CLK, RST : in std_logic;
-            timer : out integer range 0 to 2**DATA_LENGTH - 1
-        );
-    end component;
-
-    signal millisecond : positive range 0 to 2**21 - 1;
 begin
 
 --grid <= cubes_grid;
 phy_position <= (to_integer(to_unsigned(i, 16) sll 12), to_integer(to_unsigned(j, 16) sll 12));
 
-out_i <= i;
-out_j <= j;
 
-PHY_ENGINES_GENERATOR : for k in 0 to NB_PLAYERS - 1 generate
+
+PHY_ENGINES_GENERATOR : for k in 0 to NB_PLAYERSS - 1 generate
     PHY_ENGINE:collision_detector_rect_rect
     port map(
         o_pos => players_positions(k),
@@ -162,27 +122,5 @@ begin
         end if;
     end if;
 end process;
-
-
--- Copy register into RAM
-process(CLK)
-begin
-    if rising_edge(CLK) then
-        if i_copy = ROWS - 1 and j_copy = COLS - 1 then
-            j_copy <= 0; i_copy <= 0;
-        else
-            if j_copy = COLS - 1 then
-                j_copy <= 0;
-                i_copy <= i_copy + 1;
-            else
-                j_copy <= j_copy + 1;
-            end if;
-        end if;
-    end if;
-end process;
-
-i_out_ram <= i_copy;
-j_out_ram <= j_copy;
-data_out_ram <= cubes_grid(i_copy, j_copy);
 
 end architecture;
