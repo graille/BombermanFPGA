@@ -1,21 +1,22 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+use work.PROJECT_TYPES_PKG.all;
+
+entity collision_detector_rect_rect is
+    port(
+        x_pos, y_pos : in vector;
+        x_dim, y_dim : in vector;
+        is_colliding : out std_logic := '0';
+        collision_face : out positive range 0 to 3
+    );
+end collision_detector_rect_rect;
 
 
-
-entity collision_detector_rect_rect
-port(
-    x : vector;
-    width, height : vector; 
-);
-end game_controller;
-
-
-architecture behavioural of game_controller is
-
--- Choices
-
+architecture behavioural of collision_detector_rect_rect is
 begin
-
-
--- Map generation
-
+    process(x_pos, y_pos, x_dim, y_dim)
+    begin
+    
+    end process;
 end architecture;
