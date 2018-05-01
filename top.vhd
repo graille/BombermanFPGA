@@ -6,7 +6,10 @@ use work.PROJECT_RECT_PKG.all;
 
 entity top is 
     generic (
-        FREQUENCY: integer := 100000000
+        FREQUENCY: integer := 100000000;
+        
+        GAME_ROWS : integer := 12;
+        GAME_COLS : integer := 16
     );
     port (
         -- Basic inputs
@@ -22,6 +25,10 @@ entity top is
 end top;
 
 architecture behavioural of top is
+
+-- Signals
+signal current_pixel : pixel;
+signal current_block : block_type; 
 
 component graphic_controller is
     port(
@@ -47,8 +54,8 @@ end component;
 begin
     GAME_CONTROLLER_GENERATED:game_controller
     generic map (
-        ROWS => 12,
-        COLS => 16,
+        ROWS => GAME_ROWS,
+        COLS => GAME_COLS,
         FREQUENCY => FREQUENCY,
         NB_PLAYERS => 1
     )
@@ -57,20 +64,58 @@ begin
         RST => RST
     );
     
+    GAME_INFO_FOR_GRAPHIC_RAM:entity work.block_ram
+    generic map (
+        ROWS => GAME_ROWS,
+        COLS => GAME_COLS
+    )
+    port map (
+        -- Port A
+        clk  => CLK,
+        we_a   => '0',
+        i_a => 0,
+        j_a => 0,
+        data_a  => (0,0,0),
+         
+        -- Port B
+        i_b => 0,
+        j_b => 0,
+        q_b => current_block
+    );
+    
+    
     GRAPHIC_CONTROLLER_GENERATED:graphic_controller
     port map (
         CLK => CLK,
         RST => RST
     );
     
-    -- Graphic drivers    
+    -- Graphic drivers
+    PIXEL_RAM:entity work.pixel_ram
+    generic map (
+        WIDTH    => 800,
+        HEIGHT   => 600
+    )
+    port map (
+        -- Port A
+        a_clk  => CLK,
+        a_wr   => '0',
+        a_addr => 0,
+        a_din  => ((others=>'0'),(others=>'0'),(others=>'0')),
+        
+        -- Port B
+        b_clk  => CLK,
+        b_addr => 0,
+        b_dout => current_pixel
+    );
+    
     VGA_DRIVER:entity work.VGA_CONTROLLER
-        port map ( 
-            CLK_I => CLK,
-            VGA_HS_O  => VGA_HS_O,
-            VGA_VS_O => VGA_VS_O,
-            VGA_R => VGA_R,
-            VGA_B => VGA_B,
-            VGA_G => VGA_G
-        );
+    port map ( 
+        CLK_I => CLK,
+        VGA_HS_O  => VGA_HS_O,
+        VGA_VS_O => VGA_VS_O,
+        VGA_R => VGA_R,
+        VGA_B => VGA_B,
+        VGA_G => VGA_G
+    );
 end behavioural;

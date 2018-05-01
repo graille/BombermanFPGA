@@ -16,9 +16,9 @@ package PROJECT_TYPES_PKG is
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
     
     type pixel is record
-        R               : natural range 0 to 2**6 - 1;
-        G               : natural range 0 to 2**6 - 1;
-        B               : natural range 0 to 2**6 - 1;
+        R               : std_logic_vector(2 downto 0);
+        G               : std_logic_vector(2 downto 0);
+        B               : std_logic_vector(2 downto 0);
     end record;
     type array_pixel is array(natural range <>) of pixel;
     

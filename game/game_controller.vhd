@@ -5,8 +5,8 @@ use work.PROJECT_TYPES_PKG.all;
 
 entity game_controller is
     generic(
-        ROWS : integer := 15;
-        COLS : integer := 14;
+        ROWS : integer := 12;
+        COLS : integer := 16;
         FREQUENCY : integer := 10**8;
         NB_PLAYERS : integer := 4
     );
@@ -14,7 +14,12 @@ entity game_controller is
         clk, rst : in std_logic;
     
         game_end : out std_logic := '0';
-        game_winner : out integer range 0 to NB_PLAYERS - 1
+        game_winner : out integer range 0 to NB_PLAYERS - 1;
+        
+        
+        i_out_ram : out integer range 0 to ROWS - 1;
+        j_out_ram : out integer range 0 to COLS - 1;
+        data_out_ram : out block_type
         
         --grid : out td_array_cube_types(ROWS - 1 downto 0, COLS - 1 downto 0)
     );
@@ -60,8 +65,8 @@ architecture behavioural of game_controller is
     constant player_hitbox : vector := (3276, 3276);
 
     -- Physic engine signals
-    signal i : integer range 0 to ROWS - 1 := 0;
-    signal j : integer range 0 to COLS - 1 := 0;
+    signal i, i_copy : integer range 0 to ROWS - 1 := 0;
+    signal j, j_copy : integer range 0 to COLS - 1 := 0;
     signal phy_position: vector := (others => 0);
 
     -- Players states
@@ -187,5 +192,27 @@ begin
         end if;
     end if;
 end process;
+
+
+-- Copy register into RAM
+process(CLK)
+begin
+    if rising_edge(CLK) then
+        if i_copy = ROWS - 1 and j_copy = COLS - 1 then
+            j_copy <= 0; i_copy <= 0;
+        else
+            if j_copy = COLS - 1 then
+                j_copy <= 0;
+                i_copy <= i_copy + 1;
+            else
+                j_copy <= j_copy + 1;
+            end if;
+        end if;
+    end if;
+end process;
+
+i_out_ram <= i_copy;
+j_out_ram <= j_copy;
+data_out_ram <= cubes_grid(i_copy, j_copy);
 
 end architecture;

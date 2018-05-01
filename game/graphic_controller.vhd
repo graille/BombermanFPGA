@@ -5,9 +5,6 @@ use IEEE.std_logic_unsigned.all;
 entity graphic_controller is
     port(
         CLK, RST : in std_logic
-        
-        
-        data_block : in 
     );
 end graphic_controller;
 
