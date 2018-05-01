@@ -41,11 +41,11 @@ architecture behavioural of game_controller is
     type players_status_type is array(NB_PLAYERS - 1 downto 0) of std_logic;
     signal players_status : players_status_type := (others => '1'); -- 1 = alive, 0 = dead
 
-    -- Players bonus and malus 
+    -- Players bonus and malus
     type state_array_type is array(2**4 - 1 downto 0) of integer range 0 to 2**5 - 1;
     type player_status_type is array(1 downto 0) of state_array_type; -- (bonus_array, malus_array)
     type players_bonus_type is array(NB_PLAYERS downto 0) of player_status_type;
-    
+
     signal player_status_array : players_bonus_type := (others => (others => (others => 0)));
 begin
 
@@ -83,14 +83,16 @@ begin
     if rising_edge(CLK) then
         if rst = '1' then
             i <= 0;
-            j <= 0;        
+            j <= 0;
         else
-            if tpm = 0 then
-                cubes_grid(i, j) <= UNBREKEABLE_BLOCK;
-                j <= j + 1;
-                i <= i + 1;
-            else
-                tpm <= (tpm + 1) mod (sec_per_move * FREQUENCY);
+            if GAME_STATE = STATE_DEATH_MODE then
+                if tpm = 0 then
+                    cubes_grid(i, j) <= UNBREKEABLE_BLOCK;
+                    j <= j + 1;
+                    i <= i + 1;
+                else
+                    tpm <= (tpm + 1) mod (sec_per_move * FREQUENCY);
+                end if;
             end if;
         end if;
     end if;
