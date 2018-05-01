@@ -13,7 +13,7 @@ entity millisecond_counter is
     );
 end millisecond_counter;
 
-architecture behaviorial of millisecond_counter is 
+architecture behaviorial of millisecond_counter is
     constant FREQUENCY_DIV : integer := FREQUENCY / 1000;
     signal millisecond : integer range 0 to (2**DATA_LENGTH - 1) := 0;
 begin
@@ -31,7 +31,7 @@ begin
                 end if;
             end if;
         end if;
-        
+
         timer <= millisecond;
     end process;
 end architecture;
