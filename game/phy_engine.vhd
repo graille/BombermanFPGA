@@ -4,7 +4,7 @@
 entity collision_detector_rect_rect
 port(
     x : vector;
-    width, height : 
+    width, height : vector; 
 );
 end game_controller;
 
