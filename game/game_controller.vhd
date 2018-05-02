@@ -76,6 +76,7 @@ architecture behavioural of game_controller is
 
     -- FSM signals
     signal s_start_finished : std_logic;
+    
     signal s_grid_initialized : std_logic;
     signal s_death_mode_ended : std_logic;
 
@@ -89,26 +90,27 @@ architecture behavioural of game_controller is
     -- Components
     component game_fsm is
         port(
-            rst : in std_logic;
+            clk, rst : in std_logic;
             in_io : in io_signal;
-
+            
             s_start_finished : in std_logic;
             s_grid_initialized : in std_logic;
             s_death_mode_ended : in std_logic;
-
+    
             s_bomb_check_ended : in std_logic;
-
+    
             s_bomb_will_explode : in std_logic;
             s_bomb_has_exploded : in std_logic;
-
+    
             s_players_dog_updated : in std_logic;
-
+    
             in_clk_count : in clk_count;
             in_millisecond : in millisecond_count;
-
+    
             out_game_state : out game_state_type
         );
     end component;
+
 
     component fifo_player_action is
     	Generic (
@@ -167,8 +169,31 @@ architecture behavioural of game_controller is
         );
     end component;
 begin
+    MAIN_FSM: game_fsm
+        port map(
+            clk => clk,
+            rst => rst,
+            in_io => in_io,
+            
+            s_start_finished => s_start_finished,
+            
+            s_grid_initialized => s_grid_initialized,
+            s_death_mode_ended => s_death_mode_ended,
 
-    --grid <= cubes_grid;
+            s_bomb_check_ended => s_bomb_check_ended,
+
+            s_bomb_will_explode => s_bomb_will_explode,
+            s_bomb_has_exploded => s_bomb_has_exploded,
+
+            s_players_dog_updated => s_players_dog_updated,
+
+            in_clk_count => 0,
+            in_millisecond => millisecond,
+
+            out_game_state => GAME_STATE
+        );
+
+
     phy_position <= (to_integer(to_unsigned(phy_position_grid.i, 16) sll 12), to_integer(to_unsigned(phy_position_grid.j, 16) sll 12));
 
     PLAYERS_ATTRIBUTES_GENERATOR : for k in 0 to NB_PLAYERS - 1 generate
@@ -247,22 +272,26 @@ begin
             PROCESS_ACTION_PROCESSED,
             PROCESS_END_STATE
         );
-        
+
         variable STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER : integer range 0 to NB_PLAYERS - 1 := 0;
         variable STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE : STATE_GAME_PLAYERS_BOMB_CHECK_STATE := PROCESS_START_STATE;
-        
+
         -- STATE_GAME_GRID_UPDATE
         type STATE_GAME_GRID_UPDATE_STATE is (
             PROCESS_START_STATE,
             PROCESS_WAITING_FIRST_RESULT,
             PROCESS_CHECK
         );
-        
+
         variable STATE_GAME_GRID_UPDATE_CURRENT_POSITION : grid_position := (0,0);
         variable STATE_GAME_GRID_UPDATE_CURRENT_STATE : STATE_GAME_GRID_UPDATE_STATE := PROCESS_START_STATE;
     begin
         if rising_edge(CLK) then
             case GAME_STATE is
+                when STATE_START =>
+                    s_start_finished <= '1';
+                when STATE_MENU_LOADING => 
+                    s_start_finished <= '0';
                 when STATE_GAME_PLAYERS_BOMB_CHECK =>
                     case STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE is
                         when PROCESS_START_STATE =>
@@ -288,7 +317,7 @@ begin
                                     out_write <= '1';
                                 when others => null;
                             end case;
-    
+
                             STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_ACTION_PROCESSED;
                         when PROCESS_ACTION_PROCESSED =>
                             out_write <= '0';
@@ -312,10 +341,10 @@ begin
                             STATE_GAME_GRID_UPDATE_CURRENT_POSITION := INCR_POSITION_LINEAR(STATE_GAME_GRID_UPDATE_CURRENT_POSITION);
                             STATE_GAME_GRID_UPDATE_CURRENT_STATE := PROCESS_CHECK;
                         when PROCESS_CHECK =>
-                            case in_read_block.category is 
+                            case in_read_block.category is
                                 when others => null;
                             end case;
-    
+
                             STATE_GAME_GRID_UPDATE_CURRENT_POSITION := INCR_POSITION_LINEAR(STATE_GAME_GRID_UPDATE_CURRENT_POSITION);
                         when others => null;
                     end case;

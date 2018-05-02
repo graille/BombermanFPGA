@@ -10,7 +10,7 @@ entity game_fsm is
     port(
         clk, rst : in std_logic;
         in_io : in io_signal;
-
+        
         s_start_finished : in std_logic;
         s_grid_initialized : in std_logic;
         s_death_mode_ended : in std_logic;
@@ -54,7 +54,7 @@ begin
         s_players_dog_updated, in_clk_count, in_millisecond)
     begin
         if rst = '1' then
-            GAME_STATE <= STATE_START;
+            NEXT_GAME_STATE <= STATE_START;
         else
             case GAME_STATE is
                 when STATE_START =>
