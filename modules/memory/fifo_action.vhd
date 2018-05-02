@@ -2,28 +2,26 @@
 library IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
+USE work.PROJECT_TYPES_PKG.ALL;
 
-entity STD_FIFO is
+entity fifo_player_action is
 	Generic (
-		constant DATA_WIDTH  : positive := 8;
 		constant FIFO_DEPTH	: positive := 256
 	);
 	Port (
 		CLK		: in  STD_LOGIC;
 		RST		: in  STD_LOGIC;
 		WriteEn	: in  STD_LOGIC;
-		DataIn	: in  STD_LOGIC_VECTOR (DATA_WIDTH - 1 downto 0);
+		DataIn	: in  player_action;
 		ReadEn	: in  STD_LOGIC;
-		DataOut	: out STD_LOGIC_VECTOR (DATA_WIDTH - 1 downto 0);
+		DataOut	: out player_action;
 		Empty	: out STD_LOGIC;
 		Full	: out STD_LOGIC
 	);
-end STD_FIFO;
+end fifo_player_action;
 
-architecture Behavioral of STD_FIFO is
-
+architecture Behavioral of fifo_player_action is
 begin
-
 	-- Memory Pointer Process
 	fifo_proc : process (CLK)
 		type FIFO_Memory is array (0 to FIFO_DEPTH - 1) of STD_LOGIC_VECTOR (DATA_WIDTH - 1 downto 0);

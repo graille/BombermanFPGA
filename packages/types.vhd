@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.PROJECT_PARAMS_PKG.all;
+use work.PROJECT_DIRECTION_PKG.all;
 
 package PROJECT_TYPES_PKG is
     -- Timer types
@@ -19,19 +20,20 @@ package PROJECT_TYPES_PKG is
         -- 10-12 : Explosion
         -- from 13 to 31 : Bonus and malus blocks
     subtype block_category_type is natural range 0 to 31;
+    subtype state_type is natural range 0 to 2**STATE_PRECISION - 1;
     type block_type is record
 	    category	    : block_category_type;                        -- The block category (see dedicated package)
-	    state		    : natural range 0 to 2**STATE_PRECISION - 1;  -- The state of animation of the block
-	    direction		: natural range 0 to 3;                       -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
+	    state		    : state_type;  -- The state of animation of the block
+	    direction		: direction_type;                       -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
         last_update     : millisecond_count;                          -- Last time the block has been updated, usefull to manage animations
         owner : natural range 0 to NB_PLAYERS - 1;                    -- Only used by bombs and explosions to assign points to players
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
 
     type pixel is record
-        R               : std_logic_vector(2 downto 0);
-        G               : std_logic_vector(2 downto 0);
-        B               : std_logic_vector(2 downto 0);
+        R               : std_logic_vector(PIXEL_PRECISION - 1 downto 0);
+        G               : std_logic_vector(PIXEL_PRECISION - 1 downto 0);
+        B               : std_logic_vector(PIXEL_PRECISION - 1 downto 0);
     end record;
     type array_pixel is array(natural range <>) of pixel;
 
@@ -48,11 +50,9 @@ package PROJECT_TYPES_PKG is
     subtype dol_type is std_logic_vector(3 downto 0);
 
     type player_status_type is record
-	    state		    : natural range 0 to STATE_PRECISION - 1;
-	    direction		: natural range 0 to 3; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
+	    state		    : state_type;
+	    direction		: direction_type; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
     end record;
-
-
 
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / COLS, 2**(VECTOR_PRECISION) / COLS);

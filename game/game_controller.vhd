@@ -25,99 +25,254 @@ entity game_controller is
 end game_controller;
 
 architecture behavioural of game_controller is
-    signal GAME_STATE : integer range 0 to 2**3 - 1 := STATE_MENU_LOADING;
+    signal GAME_STATE : game_state_type;
 
-    -- Physic engine signals
-    signal i : integer range 0 to ROWS - 1 := 0;
-    signal j : integer range 0 to COLS - 1 := 0;
-    signal phy_position: vector := (others => 0);
+    -- Players positions
 
+    -- Player action FIFO
+    type players_fifo_data_type is array(NB_PLAYERS - 1 downto 0) of player_action;
+
+    signal players_fifo_write_en, players_fifo_read_en : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+    signal players_fifo_data_in : players_fifo_data_type := (others => EMPTY_PLAYER_ACTION);
+    signal players_fifo_data_out : players_fifo_data_type := (others => EMPTY_PLAYER_ACTION);
+    signal players_fifo_empty : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+    signal players_fifo_full : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+
+    -- Components
+    component game_fsm is
+        port(
+            rst : in std_logic;
+            in_io : in io_signal;
+
+            s_start_finished : in std_logic;
+            s_grid_initialized : in std_logic;
+            s_death_mode_ended : in std_logic;
+
+            s_bomb_check_ended : in std_logic;
+
+            s_bomb_will_explode : in std_logic;
+            s_bomb_has_exploded : in std_logic;
+
+            s_players_dog_updated : in std_logic;
+
+            in_clk_count : clk_count;
+            in_millisecond : millisecond_count;
+
+            out_game_state : out game_state_type
+        );
+    end component;
+
+    component fifo_player_action is
+    	Generic (
+    		constant FIFO_DEPTH	: positive := 256
+    	);
+    	Port (
+    		CLK		: in  STD_LOGIC;
+    		RST		: in  STD_LOGIC;
+    		WriteEn	: in  STD_LOGIC;
+    		DataIn	: in  player_action;
+    		ReadEn	: in  STD_LOGIC;
+    		DataOut	: out player_action;
+    		Empty	: out STD_LOGIC;
+    		Full	: out STD_LOGIC
+    	);
+    end component;
+
+    component player is
+        generic(
+            CONTROL_FORWARD : io_signal;
+            CONTROL_BACK : io_signal;
+            CONTROL_LEFT : io_signal;
+            CONTROL_RIGHT : io_signal;
+
+            CONTROL_BOMB : io_signal
+        );
+        port(
+            clk, rst : in std_logic;
+            in_millisecond : in positive range 0 to 2**21 - 1;
+            in_io : in io_signal;
+            in_dol : in dol_type;
+            in_next_block : in block_category_type;
+
+            out_position : out vector;
+            out_is_alive : out std_logic := '1';
+            out_power : out integer range 0 to 15 - 1;
+            out_plant_bomb : out std_logic := '0';
+            out_hitbox : out vector;
+
+            out_player_status : out player_status_type
+        );
+    end component;
 begin
 
---grid <= cubes_grid;
-phy_position <= (to_integer(to_unsigned(i, 16) sll 12), to_integer(to_unsigned(j, 16) sll 12));
+    --grid <= cubes_grid;
+    phy_position <= (to_integer(to_unsigned(i, 16) sll 12), to_integer(to_unsigned(j, 16) sll 12));
 
+    PLAYERS_ATTRIBUTES_GENERATOR : for k in 0 to NB_PLAYERSS - 1 generate
+        PLAYER:player
+        generic map (
 
+        )
+        port map(
 
-PHY_ENGINES_GENERATOR : for k in 0 to NB_PLAYERSS - 1 generate
-    PHY_ENGINE:collision_detector_rect_rect
+        );
+
+        process()
+        begin
+
+        end process;
+
+        PHY_ENGINE:collision_detector_rect_rect
+        port map(
+            o_pos => players_positions(k),
+            o_dim => player_hitbox,
+            t_pos => phy_position,
+            t_dim => DEFAULT_BLOCK_SIZE,
+            is_colliding => players_collision(k)
+        );
+
+        PLAYER_FIFO:fifo_player_action
+        generic map (
+            FIFO_DEPTH => 64
+        )
+        port map(
+            CLK => CLK,
+            RST => RST,
+            WriteEn => players_fifo_write_en(k),
+            DataIn => players_fifo_data_in(k),
+            ReadEn => players_fifo_read_en(k),
+            DataOut => players_fifo_data_out(k),
+            Empty => players_fifo_empty(k),
+            Full => players_fifo_full(k)
+        );
+    end generate;
+
+    -- Millisecond counter
+    COUNTER_ENGINE:millisecond_counter
+    generic map (
+        FREQUENCY => FREQUENCY
+    )
     port map(
-        o_pos => players_positions(k),
-        o_dim => player_hitbox,
-        t_pos => phy_position,
-        t_dim => (4096, 4096),
-        is_colliding => players_collision(k)
+        CLK => CLK,
+        RST => RST,
+        timer => millisecond
     );
-end generate;
 
--- Millisecond counter
-COUNTER_ENGINE:millisecond_counter
-generic map (
-    FREQUENCY => FREQUENCY
-)
-port map(
-    CLK => CLK,
-    RST => RST,
-    timer => millisecond
-);
+    PLAYERS_ACTION:STD_FIFO
+    generic map (
+        DATA_WIDTH => 8;
+        FIFO_DEPTH => 256
+    )
+    port map(
+        CLK => CLK,
+        RST => RST,
+        WriteEn => ,
+        DataIn => ,
+        ReadEn => ,
+        DataOut =>
+        Empty =>
+        Full =>
+    );
 
-process(CLK)
-    constant millisec_per_move : positive := 1000;
-begin
-    if rising_edge(CLK) then
-        if rst = '1' then
-            i <= 0; j <= 0;
-            GAME_STATE <= STATE_MAP_INIT;
-            game_end <= '0';
-            game_winner <= 0;
-        else
-            case GAME_STATE is
-                when STATE_START =>
-                    GAME_STATE <= STATE_MENU_LOADING;
-                when STATE_MENU_LOADING =>
-                    GAME_STATE <= STATE_MAP_INIT;
-                when STATE_MAP_INIT =>
-                    -- Generate borders
-                    if (j = 0 or j = COLS - 1) or (i = 0 or i = ROWS - 1) then
-                        block_out_ram <= UNBREAKABLE_BLOCK_0;
-                    else
-                        cubes_grid(i, j) <= EMPTY_BLOCK;
-                        -- TODO : Generate entire map
-                    end if;
-
-                    if i = ROWS - 1 and j = COLS - 1 then
-                        i <= 0; j <= 0;
-                        GAME_STATE <= STATE_GAME;
-                    else
-                        if j = COLS - 1 then
-                            j <= 0;
-                            i <= i + 1;
+    process(CLK)
+        constant millisec_per_move : positive := 1000;
+    begin
+        if rising_edge(CLK) then
+            if rst = '1' then
+                i <= 0; j <= 0;
+                GAME_STATE <= STATE_MAP_INIT;
+                game_end <= '0';
+                game_winner <= 0;
+            else
+                case GAME_STATE is
+                    when STATE_START =>
+                        GAME_STATE <= STATE_MENU_LOADING;
+                    when STATE_MENU_LOADING =>
+                        GAME_STATE <= STATE_MAP_INIT;
+                    when STATE_MAP_INIT =>
+                        -- Generate borders
+                        if (j = 0 or j = COLS - 1) or (i = 0 or i = ROWS - 1) then
+                            block_out_ram <= UNBREAKABLE_BLOCK_0;
                         else
-                            j <= j + 1;
+                            cubes_grid(i, j) <= EMPTY_BLOCK;
+                            -- TODO : Generate entire map
                         end if;
-                    end if;
-                when STATE_GAME | STATE_DEATH_MODE =>
-                    case cubes_grid(i,j).category is
-                        when others => null;
-                        -- TODO
-                    end case;
 
-                    if i = ROWS - 1 and j = COLS - 1 then
-                        i <= 0; j <= 0;
-                    else
-                        if j = COLS - 1 then
-                            j <= 0;
-                            i <= i + 1;
+                        if i = ROWS - 1 and j = COLS - 1 then
+                            i <= 0; j <= 0;
+                            GAME_STATE <= STATE_GAME;
                         else
-                            j <= j + 1;
+                            if j = COLS - 1 then
+                                j <= 0;
+                                i <= i + 1;
+                            else
+                                j <= j + 1;
+                            end if;
                         end if;
-                    end if;
-                when => STATE_GAME_OVER then
-                    game_end <= '1';
-                    game_winner <= 0; -- TODO
-            end case;
+
+                    when => STATE_GAME_OVER then
+                        game_end <= '1';
+                        game_winner <= 0; -- TODO
+                end case;
+            end if;
         end if;
-    end if;
-end process;
+    end process;
+
+    process(CLK)
+        variable i : integer range 0 to ROWS - 1 := 0;
+        variable j : integer range 0 to COLS - 1 := 0;
+    begin
+        if rising_edge(CLK)
+            if GAME_STATE = STATE_GAME | STATE_DEATH_MODE =>
+                case cubes_grid(i,j).category is
+                    when others => null;
+                    -- TODO
+                end case;
+
+                if i = ROWS - 1 and j = COLS - 1 then
+                    i <= 0; j <= 0;
+                else
+                    if j = COLS - 1 then
+                        j <= 0;
+                        i <= i + 1;
+                    else
+                        j <= j + 1;
+                    end if;
+                end if;
+            end if;
+        end if;
+
+    end process;
+
+    process(CLK)
+        variable i : integer range 0 to ROWS - 1 := 0;
+        variable j : integer range 0 to COLS - 1 := 0;
+
+        variable loading : integer range
+    begin
+        if rising_edge(CLK)
+            if GAME_STATE = STATE_GAME_PLAYERS_BOMB_CHECK then
+
+            end if;
+        end if;
+    end process;
+
+    process(CLK)
+    begin
+        if rising_edge(CLK)
+        end if;
+    end process;
+
+    process(CLK)
+    begin
+        if rising_edge(CLK)
+        end if;
+    end process;
+
+    process(CLK)
+    begin
+        if rising_edge(CLK)
+        end if;
+    end process;
 
 end architecture;

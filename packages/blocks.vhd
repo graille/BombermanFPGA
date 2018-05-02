@@ -30,4 +30,5 @@ package PROJECT_BLOCKS_PKG is
     constant MALUS_INVERSED_COMMANDS_BLOCK : block_category_type := 20;
     constant MALUS_DISABLE_BOMBS_BLOCK : block_category_type := 21;
     constant MALUS_MAXIMIZE_BLOCK : block_category_type := 22;
+    constant MALUS_REMOVE_POWER_BLOCK : block_category_type := 23;
 end package;

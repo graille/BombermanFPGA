@@ -14,6 +14,8 @@ package PROJECT_PARAMS_PKG is
 
     constant STATE_PRECISION : integer := 3;
 
+    constant PIXEL_PRECISION : integer := 4;
+
     -- O-----> Y axis
     -- |
     -- |

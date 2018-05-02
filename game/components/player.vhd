@@ -22,8 +22,9 @@ entity player is
         out_position : out vector;
         out_is_alive : out std_logic := '1';
         out_power : out integer range 0 to 15 - 1;
-        out_plant_bomb : out std_logic := '0';
         out_hitbox : out vector;
+
+        out_plant_bomb : out std_logic := '0';
 
         out_player_status : out player_status_type
     );

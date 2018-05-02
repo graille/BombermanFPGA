@@ -1,0 +1,14 @@
+#000000 -- Noir
+#ffffff -- Blanc
+
+
+-- Bois
+C08855
+DBA974
+401606
+
+-- Brique
+
+A5A399
+343237
+8B887C
