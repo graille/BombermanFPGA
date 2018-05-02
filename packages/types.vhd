@@ -63,7 +63,7 @@ package PROJECT_TYPES_PKG is
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / COLS, 2**(VECTOR_PRECISION) / COLS);
 
-    function INCR_POSITION_LINE(pos : in grid_position)
+    function INCR_POSITION_LINEAR(pos : in grid_position)
         return grid_position;
 
     function INCR_POSITION_CIRCULAR(pos : in grid_position)
@@ -71,7 +71,7 @@ package PROJECT_TYPES_PKG is
 end package;
 
 package body PROJECT_TYPES_PKG is
-    function INCR_POSITION_LINE(pos : in grid_position)
+    function INCR_POSITION_LINEAR(pos : in grid_position)
         return grid_position is
     begin
        if pos = (ROWS - 1, COLS - 1) then
@@ -81,7 +81,7 @@ package body PROJECT_TYPES_PKG is
        else
            return (pos.i, pos.j + 1);
        end if;
-   end INCR_POSITION_LINE;
+   end INCR_POSITION_LINEAR;
 
 
    function INCR_POSITION_CIRCULAR(pos : in grid_position)

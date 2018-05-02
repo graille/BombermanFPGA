@@ -7,8 +7,8 @@ package PROJECT_PARAMS_PKG is
     constant ROWS : integer := 12;
     constant COLS : integer := 16;
 
-    constant MILLISECOND_COUNTER_PRECISION : integer := 20;
-    constant CLK_COUNTER_PRECISION : integer := 32;
+    constant MILLISECOND_COUNTER_PRECISION : integer := 20; -- Max 31
+    constant CLK_COUNTER_PRECISION : integer := 31; -- Max 31
 
     constant VECTOR_PRECISION : integer := 16;
 

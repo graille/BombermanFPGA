@@ -2,7 +2,10 @@
 library IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
-USE work.PROJECT_TYPES_PKG.ALL;
+
+use work.PROJECT_PARAMS_PKG.all;
+use work.PROJECT_TYPES_PKG.all;
+use work.PROJECT_PLAYER_ACTIONS_PKG.all;
 
 entity fifo_player_action is
 	Generic (
@@ -24,7 +27,7 @@ architecture Behavioral of fifo_player_action is
 begin
 	-- Memory Pointer Process
 	fifo_proc : process (CLK)
-		type FIFO_Memory is array (0 to FIFO_DEPTH - 1) of STD_LOGIC_VECTOR (DATA_WIDTH - 1 downto 0);
+		type FIFO_Memory is array (0 to FIFO_DEPTH - 1) of player_action;
 		variable Memory : FIFO_Memory;
 
 		variable Head : natural range 0 to FIFO_DEPTH - 1;

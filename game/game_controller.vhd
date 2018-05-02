@@ -11,12 +11,15 @@ use work.PROJECT_BLOCKS_PKG.all;
 
 entity game_controller is
     generic(
-        SEED_LENGTH : integer := 16
+        SEED_LENGTH : integer := 16;
+        FREQUENCY : integer := 100000000
     );
     port(
         clk, rst : in std_logic;
         seed : in std_logic_vector(SEED_LENGTH - 1 downto 0);
         in_io : in io_signal;
+
+        in_read_block : in block_type;
 
         game_end : out std_logic := '0';
         game_winner : out integer range 0 to NB_PLAYERS - 1;
@@ -31,6 +34,8 @@ end game_controller;
 
 architecture behavioural of game_controller is
     signal GAME_STATE : game_state_type;
+
+    signal millisecond : millisecond_count := 0;
 
     -- Players attributes
     type players_grid_position_type is array(NB_PLAYERS - 1 downto 0) of grid_position;
@@ -57,6 +62,8 @@ architecture behavioural of game_controller is
 
     -- Physics engines
     signal players_collision : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+    signal phy_position_grid : grid_position;
+    signal phy_position : vector;
 
     -- Player action FIFO
     type players_fifo_data_type is array(NB_PLAYERS - 1 downto 0) of player_action;
@@ -96,8 +103,8 @@ architecture behavioural of game_controller is
 
             s_players_dog_updated : in std_logic;
 
-            in_clk_count : clk_count;
-            in_millisecond : millisecond_count;
+            in_clk_count : in clk_count;
+            in_millisecond : in millisecond_count;
 
             out_game_state : out game_state_type
         );
@@ -128,7 +135,7 @@ architecture behavioural of game_controller is
             in_millisecond : in millisecond_count;
             in_io : in io_signal;
             in_dol : in dol_type;
-            in_next_block : in block_category_type;
+            in_next_block : in block_type;
 
             out_position : out vector;
             out_is_alive : out std_logic := '1';
@@ -162,9 +169,9 @@ architecture behavioural of game_controller is
 begin
 
     --grid <= cubes_grid;
-    phy_position <= (to_integer(to_unsigned(i, 16) sll 12), to_integer(to_unsigned(j, 16) sll 12));
+    phy_position <= (to_integer(to_unsigned(phy_position_grid.i, 16) sll 12), to_integer(to_unsigned(phy_position_grid.j, 16) sll 12));
 
-    PLAYERS_ATTRIBUTES_GENERATOR : for k in 0 to NB_PLAYERSS - 1 generate
+    PLAYERS_ATTRIBUTES_GENERATOR : for k in 0 to NB_PLAYERS - 1 generate
         -- Instantiate players
         CURRENT_PLAYER:player
             generic map (
@@ -230,22 +237,6 @@ begin
         timer => millisecond
     );
 
-    PLAYERS_ACTION:STD_FIFO
-    generic map (
-        DATA_WIDTH => 8;
-        FIFO_DEPTH => 256
-    )
-    port map(
-        CLK => CLK,
-        RST => RST,
-        WriteEn => ,
-        DataIn => ,
-        ReadEn => ,
-        DataOut =>
-        Empty =>
-        Full =>
-    );
-
     process(CLK)
         variable current_player : integer range 0 to NB_PLAYERS - 1 := 0;
 
@@ -258,7 +249,7 @@ begin
             PROCESS_END_STATE
         );
 
-        variable current_state : process_state_type;
+        variable current_state : process_state_type := PROCESS_START_STATE;
     begin
         if rising_edge(CLK) then
             if GAME_STATE = STATE_GAME_PLAYERS_BOMB_CHECK then
@@ -284,6 +275,7 @@ begin
                                 out_grid_position <= players_grid_position(current_player);
                                 out_block <= (BOMB_BLOCK_0, 0, 0, players_fifo_data_out(current_player).created, current_player);
                                 out_write <= '1';
+                            when others => null;
                         end case;
 
                         current_state := PROCESS_ACTION_PROCESSED;
@@ -298,18 +290,43 @@ begin
                     when PROCESS_END_STATE =>
                         s_bomb_check_ended <= '1';
                         current_state := PROCESS_START_STATE;
+                    when others => null;
                 end case;
             end if;
         end if;
     end process;
 
-    -- STATE_GAME_CHECK_PLAYERS_DOG
+    -- STATE_GAME_GRID_UPDATE
     process(CLK)
         variable current_position : grid_position := (0,0);
+
+        type process_state_type is (
+            PROCESS_START_STATE,
+            PROCESS_WAITING_FIRST_RESULT,
+            PROCESS_CHECK
+        );
+
+        variable current_state : process_state_type := PROCESS_START_STATE;
     begin
         if rising_edge(CLK) then
             if GAME_STATE = STATE_GAME_GRID_UPDATE then
+                case current_state is
+                    when PROCESS_START_STATE =>
+                        current_position := (0, 0);
+                        current_state := PROCESS_WAITING_FIRST_RESULT;
+                    when PROCESS_WAITING_FIRST_RESULT =>
+                        current_position := INCR_POSITION_LINEAR(current_position);
+                        current_state := PROCESS_CHECK;
+                    when PROCESS_CHECK =>
+                        case in_read_block.category is 
+                            when others => null;
+                        end case;
 
+                        current_position := INCR_POSITION_LINEAR(current_position);
+                    when others => null;
+                end case;
+
+                out_grid_position <= current_position;
             end if;
         end if;
     end process;

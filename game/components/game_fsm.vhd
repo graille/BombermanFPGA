@@ -22,8 +22,8 @@ entity game_fsm is
 
         s_players_dog_updated : in std_logic;
 
-        in_clk_count : clk_count;
-        in_millisecond : millisecond_count;
+        in_clk_count : in clk_count;
+        in_millisecond : in millisecond_count;
 
         out_game_state : out game_state_type
     );

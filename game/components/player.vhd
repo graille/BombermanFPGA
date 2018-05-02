@@ -2,6 +2,7 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
+use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
 use work.PROJECT_PLAYER_ACTIONS_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
@@ -15,7 +16,7 @@ entity player is
         in_millisecond : in millisecond_count;
         in_io : in io_signal;
         in_dol : in dol_type;
-        in_next_block : in block_category_type;
+        in_next_block : in block_type;
 
         out_position : out vector;
         out_is_alive : out std_logic := '1';
@@ -114,7 +115,7 @@ begin
                     player_hitbox <= DEFAULT_HITBOX;
                 end if;
 
-                case in_next_block is
+                case in_next_block.category is
                     when 10|11|12 =>
                         if player_lives = 1 then
                             player_alive <= '0';

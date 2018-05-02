@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 use work.PROJECT_TYPES_PKG.all;
-use work.PROJECT_RECT_PKG.all;
+use work.PROJECT_DIRECTION_PKG.all;
 
 entity collision_detector_rect_rect is
     port(
@@ -19,19 +19,19 @@ begin
     -- Is colliding ?
     process(o_pos, t_pos, o_dim, t_dim)
     begin
-        if ((t_pos(1) + t_dim(1)) > o_pos(1)) then
+        if ((t_pos.x + t_dim.x) > o_pos.x) then
             collisions(0) <= '1';
         end if;
 
-        if ((t_pos(0) + t_dim(0)) > o_pos(0)) then
+        if ((t_pos.y + t_dim.y) > o_pos.y) then
             collisions(1) <= '1';
         end if;
 
-        if ((o_pos(1) + o_dim(1)) > t_pos(1)) then
+        if ((o_pos.x + o_dim.x) > t_pos.x) then
             collisions(2) <= '1';
         end if;
 
-        if ((o_pos(0) + o_dim(0)) > t_pos(1)) then
+        if ((o_pos.y + o_dim.y) > t_pos.y) then
             collisions(3) <= '1';
         end if;
     end process;
