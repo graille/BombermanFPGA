@@ -1,16 +1,14 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+
 use work.PROJECT_TYPES_PKG.all;
+use work.PROJECT_PLAYER_ACTIONS_PKG.all;
+use work.PROJECT_DIRECTION_PKG.all;
 
 entity player is
     generic(
-        CONTROL_FORWARD : io_signal;
-        CONTROL_BACK : io_signal;
-        CONTROL_LEFT : io_signal;
-        CONTROL_RIGHT : io_signal;
-
-        CONTROL_BOMB : io_signal
+        CONTROL_SET : integer := 0
     );
     port(
         clk, rst : in std_logic;
@@ -24,7 +22,7 @@ entity player is
         out_power : out integer range 0 to 15 - 1;
         out_hitbox : out vector;
 
-        out_plant_bomb : out std_logic := '0';
+        out_action : out player_action := EMPTY_PLAYER_ACTION;
 
         out_player_status : out player_status_type
     );
@@ -36,7 +34,7 @@ architecture player of player is
     constant DEFAULT_SPEED : integer := 1;
 
     -- Players states
-    signal player_alive : player_status := '1'; -- 1 = alive, 0 = dead
+    signal player_alive : std_logic := '1'; -- 1 = alive, 0 = dead
 
     -- Players informations
     signal player_position : vector := PLAYER_INITIAL_POSITION;
@@ -55,19 +53,32 @@ architecture player of player is
 
     -- Malus
     signal player_inversed_commands : std_logic := '0';
+
+    signal player_state : state_type;
+    signal player_direction : direction_type;
+    
+    -- Commands
+    -- TODO
+    constant CONTROL_FORWARD : io_signal := x"ff";
+    constant CONTROL_BACK : io_signal := x"fe";
+    constant CONTROL_LEFT : io_signal := x"fb";
+    constant CONTROL_RIGHT : io_signal := x"fa";
+
+    constant CONTROL_BOMB : io_signal := x"f1";
+    
 begin
     process(clk)
         constant player_god_mode_duration : integer := 5000;
-        variable player_god_mode_activation : positive range 0 to 2**21 - 1 := 0;
+        variable player_god_mode_activation : millisecond_count := 0;
 
         constant player_wall_hack_duration : integer := 10000;
-        variable player_wall_hack_activation : positive range 0 to 2**21 - 1 := 0;
+        variable player_wall_hack_activation : millisecond_count := 0;
 
         constant player_no_bombs_duration : integer := 7000;
-        variable player_no_bombs_activation : positive range 0 to 2**21 - 1 := 0;
+        variable player_no_bombs_activation : millisecond_count := 0;
 
         constant player_hitbox_change_duration : integer := 10000;
-        variable player_hitbox_change_activation : positive range 0 to 2**21 - 1 := 0;
+        variable player_hitbox_change_activation : millisecond_count := 0;
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -110,7 +121,7 @@ begin
 
                         player_lives <= player_lives - 1;
                     when 13 => -- Speed Bonus
-                        if player_speed < 2**12 - 1;
+                        if player_speed < 2**12 - 1 then
                             player_speed <= player_speed * 2;
                         end if;
                     when 14 => -- Power Bonus
@@ -141,8 +152,9 @@ begin
                     when 21 => -- Activate inversed command
                         player_inversed_commands <= '1';
                     when 22 => -- Increase player size
-                        player_hitbox <= (DEFAULT_HITBOX(0) * 2, DEFAULT_HITBOX(0) * 2);
+                        player_hitbox <= (DEFAULT_HITBOX.X * 2, DEFAULT_HITBOX.Y * 2);
                         player_hitbox_change_activation := in_millisecond;
+                    when others => null;
                 end case;
             end if;
         end if;
@@ -154,49 +166,48 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
             else
-                out_plant_bomb <= '0';
+                out_action <= EMPTY_PLAYER_ACTION;
 
                 -- Select speed
-                case player_descriptor.inversed_commands is
+                case player_inversed_commands is
                     when '0' =>
-                        real_speed := player_descriptor.speed;
+                        real_speed := player_speed;
                     when '1' =>
-                        real_speed := -player_descriptor.speed;
+                        real_speed := -player_speed;
                     when others => null;
                 end case;
 
                 -- Update position
                 case in_io is
                     when CONTROL_FORWARD =>
-                        if in_dol(0) = '1' or player_wall_hack = '1' then
-                            player_position(0) = player_position(0) - speed;
+                        if in_dol(D_UP) = '1' or player_wall_hack = '1' then
+                            player_position.X <= player_position.X - real_speed;
                         end if;
                     when CONTROL_BACK =>
-                        if in_dol(2) = '1' or player_wall_hack = '1' then
-                            player_position(0) = player_position(0) + speed;
+                        if in_dol(D_DOWN) = '1' or player_wall_hack = '1' then
+                            player_position.X <= player_position.X + real_speed;
                         end if;
                     when CONTROL_LEFT =>
-                        if in_dol(3) = '1' or player_wall_hack = '1' then
-                            player_position(1) = player_position(1) - speed;
+                        if in_dol(D_LEFT) = '1' or player_wall_hack = '1' then
+                            player_position.Y <= player_position.Y - real_speed;
                         end if;
                     when CONTROL_RIGHT =>
-                        if in_dol(1) = '1' or player_wall_hack = '1' then
-                            player_position(1) = player_position(1) + speed;
+                        if in_dol(D_RIGHT) = '1' or player_wall_hack = '1' then
+                            player_position.Y <= player_position.Y + real_speed;
                         end if;
                     when CONTROL_BOMB =>
-                        if player_nb_bombs < player_nb_max_bombs and player_can_plant_bomb = '1' then
+                        if (player_nb_bombs < player_max_bombs) and (player_can_plant_bomb = '1') then
                             player_nb_bombs <= player_nb_bombs + 1;
-                            out_plant_bomb <= '1';
+                            out_action <= (PLANT_NORMAL_BOMB, in_millisecond);
                         end if;
                     when others => null;
                 end case;
             end if;
         end if;
     end process;
-
+    
+    out_player_status <= (player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
     out_hitbox <= player_hitbox;
-
-
 end player;

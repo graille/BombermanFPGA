@@ -94,5 +94,5 @@ package body PROJECT_TYPES_PKG is
       else
           return (pos.i, pos.j + 1);
       end if;
-  end INCR_POSITION_LINE;
+  end INCR_POSITION_CIRCULAR;
 end package body;

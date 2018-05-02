@@ -1,8 +1,13 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
-use work.PROJECT_PARAMS.all;
+
+use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
+use work.PROJECT_DIRECTION_PKG.all;
+use work.PROJECT_PLAYER_ACTIONS_PKG.all;
+use work.PROJECT_GAME_STATES_PKG.all;
+use work.PROJECT_BLOCKS_PKG.all;
 
 entity game_controller is
     generic(
@@ -187,87 +192,11 @@ begin
         Empty =>
         Full =>
     );
-
-    process(CLK)
-        constant millisec_per_move : positive := 1000;
-    begin
-        if rising_edge(CLK) then
-            if rst = '1' then
-                i <= 0; j <= 0;
-                GAME_STATE <= STATE_MAP_INIT;
-                game_end <= '0';
-                game_winner <= 0;
-            else
-                case GAME_STATE is
-                    when STATE_START =>
-                        GAME_STATE <= STATE_MENU_LOADING;
-                    when STATE_MENU_LOADING =>
-                        GAME_STATE <= STATE_MAP_INIT;
-                    when STATE_MAP_INIT =>
-                        -- Generate borders
-                        if (j = 0 or j = COLS - 1) or (i = 0 or i = ROWS - 1) then
-                            block_out_ram <= UNBREAKABLE_BLOCK_0;
-                        else
-                            cubes_grid(i, j) <= EMPTY_BLOCK;
-                            -- TODO : Generate entire map
-                        end if;
-
-                        if i = ROWS - 1 and j = COLS - 1 then
-                            i <= 0; j <= 0;
-                            GAME_STATE <= STATE_GAME;
-                        else
-                            if j = COLS - 1 then
-                                j <= 0;
-                                i <= i + 1;
-                            else
-                                j <= j + 1;
-                            end if;
-                        end if;
-
-                    when => STATE_GAME_OVER then
-                        game_end <= '1';
-                        game_winner <= 0; -- TODO
-                end case;
-            end if;
-        end if;
-    end process;
-
-    process(CLK)
-        variable i : integer range 0 to ROWS - 1 := 0;
-        variable j : integer range 0 to COLS - 1 := 0;
-    begin
-        if rising_edge(CLK)
-            if GAME_STATE = STATE_GAME | STATE_DEATH_MODE =>
-                case cubes_grid(i,j).category is
-                    when others => null;
-                    -- TODO
-                end case;
-
-                if i = ROWS - 1 and j = COLS - 1 then
-                    i <= 0; j <= 0;
-                else
-                    if j = COLS - 1 then
-                        j <= 0;
-                        i <= i + 1;
-                    else
-                        j <= j + 1;
-                    end if;
-                end if;
-            end if;
-        end if;
-
-    end process;
-
+    
     process(CLK)
         variable current_player : integer range 0 to NB_PLAYERS - 1 := 0;
 
-        constant PROCESS_START_STATE : integer := 0;
-        constant PROCESS_START_PLAYER_CHECK : integer := 1;
-        constant PROCESS_LOADING_PLAYER_NEXT_ACTION : integer := 2;
-        constant PROCESS_NEXT_ACTION_LOADED : integer := 3;
-        constant PROCESS_END_STATE : integer := 4;
-
-        subtype process_state_type is (
+        type process_state_type is (
             PROCESS_START_STATE,
             PROCESS_START_PLAYER_CHECK,
             PROCESS_LOADING_PLAYER_NEXT_ACTION,
@@ -278,7 +207,7 @@ begin
 
         variable current_state : process_state_type;
     begin
-        if rising_edge(CLK)
+        if rising_edge(CLK) then
             if GAME_STATE = STATE_GAME_PLAYERS_BOMB_CHECK then
                 case current_state is
                     when PROCESS_START_STATE =>
@@ -288,7 +217,7 @@ begin
                     when PROCESS_START_PLAYER_CHECK =>
                         if players_fifo_empty(current_player) = '0' then
                             players_fifo_read_en(current_player) <= '1';
-                            current_state := PROCESS_NEXT_ACTION_LOADED
+                            current_state := PROCESS_NEXT_ACTION_LOADED;
                         else
                             current_player := (current_player + 1) mod NB_PLAYERS;
                         end if;
@@ -297,10 +226,10 @@ begin
                         current_state := PROCESS_NEXT_ACTION_LOADED;
                     when PROCESS_NEXT_ACTION_LOADED =>
                         -- Check the data
-                        case players_fifo_data_out(current_player) is
+                        case players_fifo_data_out(current_player).category is
                             when PLANT_NORMAL_BOMB =>
                                 out_grid_position <= players_grid_position(current_player);
-                                out_block <= (BOMB_BLOCK_0, 0, 0, millisecond, current_player);
+                                out_block <= (BOMB_BLOCK_0, 0, 0, players_fifo_data_out(current_player).created, current_player);
                                 out_write <= '1';
                         end case;
 
@@ -325,7 +254,7 @@ begin
     process(CLK)
         variable current_position : grid_position := (0,0);
     begin
-        if rising_edge(CLK)
+        if rising_edge(CLK) then
             if GAME_STATE = STATE_GAME_GRID_UPDATE then
                 
             end if;
@@ -334,13 +263,13 @@ begin
 
     process(CLK)
     begin
-        if rising_edge(CLK)
+        if rising_edge(CLK) then
         end if;
     end process;
 
     process(CLK)
     begin
-        if rising_edge(CLK)
+        if rising_edge(CLK) then
         end if;
     end process;
 

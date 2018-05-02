@@ -1,13 +1,16 @@
-package PROJECT_PLAYER_ACTIONS_PKG is
-    -- Actions
-    constant PLANT_NORMAL_BOMB : integer := 0;
+use work.PROJECT_TYPES_PKG.all;
 
+package PROJECT_PLAYER_ACTIONS_PKG is
     -- Declare associated types
-    subtype player_action_category is (PLANT_BOMB);
+    type player_action_category is (
+        EMPTY_ACTION,
+        PLANT_NORMAL_BOMB
+    );
+    
     type player_action is record
-        category            : player_action_category;
-        created             : millisecond_count;
+        category  : player_action_category;
+        created   : millisecond_count;
     end record;
 
-    constant EMPTY_PLAYER_ACTION : player_action := (0, 0);
-end package
+    constant EMPTY_PLAYER_ACTION : player_action := (EMPTY_ACTION, 0);
+end package;
