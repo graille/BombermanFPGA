@@ -42,6 +42,11 @@ package PROJECT_TYPES_PKG is
         Y               : natural range 0 to (2**VECTOR_PRECISION) - 1;
     end record;
 
+    type grid_position is record
+        i : natural range 0 to (ROWS - 1);
+        j : natural range 0 to (COLS - 1);
+    end record;
+
     -- IO_Signals
     subtype io_signal is std_logic_vector(7 downto 0);
     type array_io_signal is array(natural range <>) of io_signal;
@@ -57,5 +62,37 @@ package PROJECT_TYPES_PKG is
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / COLS, 2**(VECTOR_PRECISION) / COLS);
 
-
+    function INCR_POSITION_LINE(pos : in grid_position)
+        return grid_position;
+        
+    function INCR_POSITION_CIRCULAR(pos : in grid_position)
+        return grid_position;
 end package;
+
+package body PROJECT_TYPES_PKG is
+    function INCR_POSITION_LINE(pos : in grid_position)
+        return grid_position is
+    begin
+       if pos = (ROWS - 1, COLS - 1) then
+           return (0, 0);
+       elsif pos.j = (COLS - 1) then
+           return (pos.i + 1, 0);
+       else
+           return (pos.i, pos.j + 1);
+       end if;
+   end INCR_POSITION_LINE;
+   
+   
+   function INCR_POSITION_CIRCULAR(pos : in grid_position)
+       return grid_position is
+   begin
+    -- TODO
+      if pos = (ROWS - 1, COLS - 1) then
+          return (0, 0);
+      elsif pos.j = (COLS - 1) then
+          return (pos.i + 1, 0);
+      else
+          return (pos.i, pos.j + 1);
+      end if;
+  end INCR_POSITION_LINE;
+end package body;

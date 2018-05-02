@@ -15,8 +15,7 @@ entity game_controller is
         game_end : out std_logic := '0';
         game_winner : out integer range 0 to NB_PLAYERS - 1;
 
-        out_i : out integer range 0 to ROWS - 1;
-        out_j : out integer range 0 to COLS - 1;
+        out_grid_position : out grid_position;
         out_block : out block_type;
         out_write : out std_logic
 
@@ -28,6 +27,8 @@ architecture behavioural of game_controller is
     signal GAME_STATE : game_state_type;
 
     -- Players positions
+    type players_grid_position_type is array(NB_PLAYERS - 1 downto 0) of grid_position;
+    signal players_grid_position : players_grid_position_type := (others => (others => 0));
 
     -- Player action FIFO
     type players_fifo_data_type is array(NB_PLAYERS - 1 downto 0) of player_action;
@@ -37,6 +38,19 @@ architecture behavioural of game_controller is
     signal players_fifo_data_out : players_fifo_data_type := (others => EMPTY_PLAYER_ACTION);
     signal players_fifo_empty : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
     signal players_fifo_full : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+
+    -- FSM signals
+
+    signal s_start_finished : std_logic;
+    signal s_grid_initialized : std_logic;
+    signal s_death_mode_ended : std_logic;
+
+    signal s_bomb_check_ended : std_logic;
+
+    signal s_bomb_will_explode : std_logic;
+    signal s_bomb_has_exploded : std_logic;
+
+    signal s_players_dog_updated : std_logic;
 
     -- Components
     component game_fsm is
@@ -245,21 +259,76 @@ begin
     end process;
 
     process(CLK)
-        variable i : integer range 0 to ROWS - 1 := 0;
-        variable j : integer range 0 to COLS - 1 := 0;
+        variable current_player : integer range 0 to NB_PLAYERS - 1 := 0;
 
-        variable loading : integer range
+        constant PROCESS_START_STATE : integer := 0;
+        constant PROCESS_START_PLAYER_CHECK : integer := 1;
+        constant PROCESS_LOADING_PLAYER_NEXT_ACTION : integer := 2;
+        constant PROCESS_NEXT_ACTION_LOADED : integer := 3;
+        constant PROCESS_END_STATE : integer := 4;
+
+        subtype process_state_type is (
+            PROCESS_START_STATE,
+            PROCESS_START_PLAYER_CHECK,
+            PROCESS_LOADING_PLAYER_NEXT_ACTION,
+            PROCESS_NEXT_ACTION_LOADED,
+            PROCESS_ACTION_PROCESSED,
+            PROCESS_END_STATE
+        );
+
+        variable current_state : process_state_type;
     begin
         if rising_edge(CLK)
             if GAME_STATE = STATE_GAME_PLAYERS_BOMB_CHECK then
+                case current_state is
+                    when PROCESS_START_STATE =>
+                        current_player := 0;
+                        s_bomb_check_ended <= '0';
+                        current_state := PROCESS_START_PLAYER_CHECK;
+                    when PROCESS_START_PLAYER_CHECK =>
+                        if players_fifo_empty(current_player) = '0' then
+                            players_fifo_read_en(current_player) <= '1';
+                            current_state := PROCESS_NEXT_ACTION_LOADED
+                        else
+                            current_player := (current_player + 1) mod NB_PLAYERS;
+                        end if;
+                    when PROCESS_LOADING_PLAYER_NEXT_ACTION =>
+                        players_fifo_read_en(current_player) <= '0';
+                        current_state := PROCESS_NEXT_ACTION_LOADED;
+                    when PROCESS_NEXT_ACTION_LOADED =>
+                        -- Check the data
+                        case players_fifo_data_out(current_player) is
+                            when PLANT_NORMAL_BOMB =>
+                                out_grid_position <= players_grid_position(current_player);
+                                out_block <= (BOMB_BLOCK_0, 0, 0, millisecond, current_player);
+                                out_write <= '1';
+                        end case;
 
+                        current_state := PROCESS_ACTION_PROCESSED;
+                    when PROCESS_ACTION_PROCESSED =>
+                        out_write <= '0';
+                        if current_player = NB_PLAYERS - 1 then
+                            current_state := PROCESS_END_STATE;
+                        else
+                            current_player := (current_player + 1) mod NB_PLAYERS;
+                            current_state := PROCESS_START_PLAYER_CHECK;
+                        end if;
+                    when PROCESS_END_STATE =>
+                        s_bomb_check_ended <= '1';
+                        current_state := PROCESS_START_STATE;
+                end case;
             end if;
         end if;
     end process;
 
+    -- STATE_GAME_CHECK_PLAYERS_DOG
     process(CLK)
+        variable current_position : grid_position := (0,0);
     begin
         if rising_edge(CLK)
+            if GAME_STATE = STATE_GAME_GRID_UPDATE then
+                
+            end if;
         end if;
     end process;
 
