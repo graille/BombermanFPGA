@@ -22,23 +22,22 @@ begin
         if ((t_pos(1) + t_dim(1)) > o_pos(1)) then
             collisions(0) <= '1';
         end if;
-        
+
         if ((t_pos(0) + t_dim(0)) > o_pos(0)) then
             collisions(1) <= '1';
         end if;
-        
+
         if ((o_pos(1) + o_dim(1)) > t_pos(1)) then
             collisions(2) <= '1';
         end if;
-        
+
         if ((o_pos(0) + o_dim(0)) > t_pos(1)) then
             collisions(3) <= '1';
         end if;
     end process;
-    
-    is_colliding <= collisions(0) 
-        and collisions(1) 
-        and collisions(2) 
+
+    is_colliding <= collisions(0)
+        and collisions(1)
+        and collisions(2)
         and collisions(3);
 end architecture;
-

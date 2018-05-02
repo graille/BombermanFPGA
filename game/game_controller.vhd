@@ -16,6 +16,7 @@ entity game_controller is
     port(
         clk, rst : in std_logic;
         seed : in std_logic_vector(SEED_LENGTH - 1 downto 0);
+        in_io : in io_signal;
 
         game_end : out std_logic := '0';
         game_winner : out integer range 0 to NB_PLAYERS - 1;
@@ -31,9 +32,31 @@ end game_controller;
 architecture behavioural of game_controller is
     signal GAME_STATE : game_state_type;
 
-    -- Players positions
+    -- Players attributes
     type players_grid_position_type is array(NB_PLAYERS - 1 downto 0) of grid_position;
     signal players_grid_position : players_grid_position_type := (others => (others => 0));
+
+    type players_block_to_process_type is array(NB_PLAYERS - 1 downto 0) of block_type;
+    signal players_block_to_process : players_block_to_process_type;
+
+    type players_positions_type is array(NB_PLAYERS - 1 downto 0) of vector;
+    type players_power_type is array(NB_PLAYERS - 1 downto 0) of integer range 0 to MAX_PLAYER_POWER - 1;
+    type players_hitbox_type is array(NB_PLAYERS - 1 downto 0) of vector;
+    type players_action_type is array(NB_PLAYERS - 1 downto 0) of player_action;
+    type players_status_type is array(NB_PLAYERS - 1 downto 0) of player_status_type;
+
+    signal players_position : players_positions_type := (others => (others => 0));
+    signal players_alive : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+    signal players_power : players_power_type := (others => 0);
+    signal players_hitbox : players_hitbox_type := (others => (others => 0));
+
+    signal players_next_action : players_action_type := (others => EMPTY_PLAYER_ACTION);
+    signal players_new_action : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+
+    signal players_status : players_status_type := (others => DEFAULT_PLAYER_STATUS);
+
+    -- Physics engines
+    signal players_collision : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
 
     -- Player action FIFO
     type players_fifo_data_type is array(NB_PLAYERS - 1 downto 0) of player_action;
@@ -45,7 +68,6 @@ architecture behavioural of game_controller is
     signal players_fifo_full : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
 
     -- FSM signals
-
     signal s_start_finished : std_logic;
     signal s_grid_initialized : std_logic;
     signal s_death_mode_ended : std_logic;
@@ -99,27 +121,42 @@ architecture behavioural of game_controller is
 
     component player is
         generic(
-            CONTROL_FORWARD : io_signal;
-            CONTROL_BACK : io_signal;
-            CONTROL_LEFT : io_signal;
-            CONTROL_RIGHT : io_signal;
-
-            CONTROL_BOMB : io_signal
+            CONTROL_SET : integer := 0
         );
         port(
             clk, rst : in std_logic;
-            in_millisecond : in positive range 0 to 2**21 - 1;
+            in_millisecond : in millisecond_count;
             in_io : in io_signal;
             in_dol : in dol_type;
             in_next_block : in block_category_type;
 
             out_position : out vector;
             out_is_alive : out std_logic := '1';
-            out_power : out integer range 0 to 15 - 1;
-            out_plant_bomb : out std_logic := '0';
+            out_power : out integer range 0 to MAX_PLAYER_POWER - 1;
             out_hitbox : out vector;
 
-            out_player_status : out player_status_type
+            out_action : out player_action := EMPTY_PLAYER_ACTION;
+            out_new_action : out std_logic := '0';
+
+            out_player_status : out player_status_type := DEFAULT_PLAYER_STATUS
+        );
+    end component;
+
+    component collision_detector_rect_rect is
+        port(
+            o_pos, t_pos : in vector;
+            o_dim, t_dim : in vector;
+            is_colliding : out std_logic := '0'
+        );
+    end component;
+
+    component millisecond_counter is
+        generic(
+            FREQUENCY : integer := 100000000
+        );
+        port(
+            CLK, RST : in std_logic;
+            timer : out millisecond_count
         );
     end component;
 begin
@@ -128,42 +165,58 @@ begin
     phy_position <= (to_integer(to_unsigned(i, 16) sll 12), to_integer(to_unsigned(j, 16) sll 12));
 
     PLAYERS_ATTRIBUTES_GENERATOR : for k in 0 to NB_PLAYERSS - 1 generate
-        PLAYER:player
-        generic map (
+        -- Instantiate players
+        CURRENT_PLAYER:player
+            generic map (
+                CONTROL_SET => k
+            )
+            port map(
+                clk => CLK,
+                rst => rst,
+                in_millisecond => millisecond,
+                in_io => in_io,
+                in_dol => x"f",
+                in_next_block => players_block_to_process(k),
 
-        )
-        port map(
+                out_position => players_position(k),
+                out_is_alive => players_alive(k),
+                out_power => players_power(k),
+                out_hitbox => players_hitbox(k),
 
-        );
+                out_action => players_next_action(k),
+                out_new_action => players_new_action(k),
 
-        process()
-        begin
+                out_player_status => players_status(k)
+            );
 
-        end process;
-
+        -- Instantiate collisions detectors
         PHY_ENGINE:collision_detector_rect_rect
-        port map(
-            o_pos => players_positions(k),
-            o_dim => player_hitbox,
-            t_pos => phy_position,
-            t_dim => DEFAULT_BLOCK_SIZE,
-            is_colliding => players_collision(k)
-        );
+            port map(
+                o_pos => players_position(k),
+                o_dim => players_hitbox(k),
+                t_pos => phy_position,
+                t_dim => DEFAULT_BLOCK_SIZE,
+                is_colliding => players_collision(k)
+            );
+
+        -- Manage the FIFO which deals with players actions
+        players_fifo_write_en(k) <= players_new_action(k);
+        players_fifo_data_in(k) <= players_next_action(k);
 
         PLAYER_FIFO:fifo_player_action
-        generic map (
-            FIFO_DEPTH => 64
-        )
-        port map(
-            CLK => CLK,
-            RST => RST,
-            WriteEn => players_fifo_write_en(k),
-            DataIn => players_fifo_data_in(k),
-            ReadEn => players_fifo_read_en(k),
-            DataOut => players_fifo_data_out(k),
-            Empty => players_fifo_empty(k),
-            Full => players_fifo_full(k)
-        );
+            generic map (
+                FIFO_DEPTH => 64
+            )
+            port map(
+                CLK => CLK,
+                RST => RST,
+                WriteEn => players_fifo_write_en(k),
+                DataIn => players_fifo_data_in(k),
+                ReadEn => players_fifo_read_en(k),
+                DataOut => players_fifo_data_out(k),
+                Empty => players_fifo_empty(k),
+                Full => players_fifo_full(k)
+            );
     end generate;
 
     -- Millisecond counter
@@ -192,7 +245,7 @@ begin
         Empty =>
         Full =>
     );
-    
+
     process(CLK)
         variable current_player : integer range 0 to NB_PLAYERS - 1 := 0;
 
@@ -256,7 +309,7 @@ begin
     begin
         if rising_edge(CLK) then
             if GAME_STATE = STATE_GAME_GRID_UPDATE then
-                
+
             end if;
         end if;
     end process;

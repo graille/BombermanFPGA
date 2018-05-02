@@ -16,6 +16,8 @@ package PROJECT_PARAMS_PKG is
 
     constant PIXEL_PRECISION : integer := 4;
 
+    constant MAX_PLAYER_POWER : integer := 15;
+
     -- O-----> Y axis
     -- |
     -- |

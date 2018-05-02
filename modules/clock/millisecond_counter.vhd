@@ -4,18 +4,17 @@ use IEEE.std_logic_unsigned.all;
 
 entity millisecond_counter is
     generic(
-        DATA_LENGTH : integer := 21; -- 21 bits = 34 minutes
         FREQUENCY : integer := 100000000
     );
     port(
         CLK, RST : in std_logic;
-        timer : out integer range 0 to 2**DATA_LENGTH - 1
+        timer : out millisecond_count
     );
 end millisecond_counter;
 
 architecture behaviorial of millisecond_counter is
     constant FREQUENCY_DIV : integer := FREQUENCY / 1000;
-    signal millisecond : integer range 0 to (2**DATA_LENGTH - 1) := 0;
+    signal millisecond : millisecond_count := 0;
 begin
     process(CLK)
         variable tmp : integer range 0 to (FREQUENCY_DIV - 1) := 0;
@@ -27,7 +26,7 @@ begin
             else
                 tmp := (tmp + 1) mod FREQUENCY_DIV;
                 if tmp = 0 then
-                    millisecond <= (millisecond + 1) mod 2**DATA_LENGTH;
+                    millisecond <= (millisecond + 1) mod 2**MILLISECOND_COUNTER_PRECISION;
                 end if;
             end if;
         end if;

@@ -58,13 +58,14 @@ package PROJECT_TYPES_PKG is
 	    state		    : state_type;
 	    direction		: direction_type; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
     end record;
+    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0);
 
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / COLS, 2**(VECTOR_PRECISION) / COLS);
 
     function INCR_POSITION_LINE(pos : in grid_position)
         return grid_position;
-        
+
     function INCR_POSITION_CIRCULAR(pos : in grid_position)
         return grid_position;
 end package;
@@ -81,8 +82,8 @@ package body PROJECT_TYPES_PKG is
            return (pos.i, pos.j + 1);
        end if;
    end INCR_POSITION_LINE;
-   
-   
+
+
    function INCR_POSITION_CIRCULAR(pos : in grid_position)
        return grid_position is
    begin

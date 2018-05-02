@@ -12,19 +12,20 @@ entity player is
     );
     port(
         clk, rst : in std_logic;
-        in_millisecond : in positive range 0 to 2**21 - 1;
+        in_millisecond : in millisecond_count;
         in_io : in io_signal;
         in_dol : in dol_type;
         in_next_block : in block_category_type;
 
         out_position : out vector;
         out_is_alive : out std_logic := '1';
-        out_power : out integer range 0 to 15 - 1;
+        out_power : out integer range 0 to MAX_PLAYER_POWER - 1;
         out_hitbox : out vector;
 
         out_action : out player_action := EMPTY_PLAYER_ACTION;
+        out_new_action : out std_logic := '0';
 
-        out_player_status : out player_status_type
+        out_player_status : out player_status_type := DEFAULT_PLAYER_STATUS
     );
 end player;
 
@@ -39,7 +40,7 @@ architecture player of player is
     -- Players informations
     signal player_position : vector := PLAYER_INITIAL_POSITION;
     signal player_speed : integer range 0 to 2**12 - 1;
-    signal player_power : integer range 0 to 15 := 1;
+    signal player_power : integer range 0 to MAX_PLAYER_POWER := 1;
     signal player_hitbox : vector := DEFAULT_HITBOX;
 
     signal player_max_bombs : integer range 0 to 31 := 1;
@@ -56,7 +57,7 @@ architecture player of player is
 
     signal player_state : state_type;
     signal player_direction : direction_type;
-    
+
     -- Commands
     -- TODO
     constant CONTROL_FORWARD : io_signal := x"ff";
@@ -65,7 +66,7 @@ architecture player of player is
     constant CONTROL_RIGHT : io_signal := x"fa";
 
     constant CONTROL_BOMB : io_signal := x"f1";
-    
+
 begin
     process(clk)
         constant player_god_mode_duration : integer := 5000;
@@ -205,7 +206,7 @@ begin
             end if;
         end if;
     end process;
-    
+
     out_player_status <= (player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
