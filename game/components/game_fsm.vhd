@@ -1,9 +1,10 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
-use work.PROJECT_PARAMS.all;
+
+use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
-use work.PROJECT_GAME_STATES.all;
+use work.PROJECT_GAME_STATES_PKG.all;
 
 entity game_fsm is
     port(
