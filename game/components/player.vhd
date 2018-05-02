@@ -84,13 +84,11 @@ begin
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                player_position <= PLAYER_INITIAL_POSITION;
                 player_speed <= DEFAULT_SPEED;
                 player_power <= 1;
                 player_hitbox <= DEFAULT_HITBOX;
 
                 player_max_bombs <= 1;
-                player_nb_bombs <= 0;
                 player_can_plant_bomb <= '1';
 
                 player_god_mode <= '0';
@@ -167,6 +165,8 @@ begin
     begin
         if rising_edge(clk) then
             if rst = '1' then
+                player_position <= PLAYER_INITIAL_POSITION;
+                player_nb_bombs <= 0;
             else
                 out_action <= EMPTY_PLAYER_ACTION;
 

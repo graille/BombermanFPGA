@@ -238,9 +238,8 @@ begin
     );
 
     process(CLK)
-        variable current_player : integer range 0 to NB_PLAYERS - 1 := 0;
-
-        type process_state_type is (
+        -- STATE_GAME_PLAYERS_BOMB_CHECK
+        type STATE_GAME_PLAYERS_BOMB_CHECK_STATE is (
             PROCESS_START_STATE,
             PROCESS_START_PLAYER_CHECK,
             PROCESS_LOADING_PLAYER_NEXT_ACTION,
@@ -248,99 +247,82 @@ begin
             PROCESS_ACTION_PROCESSED,
             PROCESS_END_STATE
         );
-
-        variable current_state : process_state_type := PROCESS_START_STATE;
-    begin
-        if rising_edge(CLK) then
-            if GAME_STATE = STATE_GAME_PLAYERS_BOMB_CHECK then
-                case current_state is
-                    when PROCESS_START_STATE =>
-                        current_player := 0;
-                        s_bomb_check_ended <= '0';
-                        current_state := PROCESS_START_PLAYER_CHECK;
-                    when PROCESS_START_PLAYER_CHECK =>
-                        if players_fifo_empty(current_player) = '0' then
-                            players_fifo_read_en(current_player) <= '1';
-                            current_state := PROCESS_NEXT_ACTION_LOADED;
-                        else
-                            current_player := (current_player + 1) mod NB_PLAYERS;
-                        end if;
-                    when PROCESS_LOADING_PLAYER_NEXT_ACTION =>
-                        players_fifo_read_en(current_player) <= '0';
-                        current_state := PROCESS_NEXT_ACTION_LOADED;
-                    when PROCESS_NEXT_ACTION_LOADED =>
-                        -- Check the data
-                        case players_fifo_data_out(current_player).category is
-                            when PLANT_NORMAL_BOMB =>
-                                out_grid_position <= players_grid_position(current_player);
-                                out_block <= (BOMB_BLOCK_0, 0, 0, players_fifo_data_out(current_player).created, current_player);
-                                out_write <= '1';
-                            when others => null;
-                        end case;
-
-                        current_state := PROCESS_ACTION_PROCESSED;
-                    when PROCESS_ACTION_PROCESSED =>
-                        out_write <= '0';
-                        if current_player = NB_PLAYERS - 1 then
-                            current_state := PROCESS_END_STATE;
-                        else
-                            current_player := (current_player + 1) mod NB_PLAYERS;
-                            current_state := PROCESS_START_PLAYER_CHECK;
-                        end if;
-                    when PROCESS_END_STATE =>
-                        s_bomb_check_ended <= '1';
-                        current_state := PROCESS_START_STATE;
-                    when others => null;
-                end case;
-            end if;
-        end if;
-    end process;
-
-    -- STATE_GAME_GRID_UPDATE
-    process(CLK)
-        variable current_position : grid_position := (0,0);
-
-        type process_state_type is (
+        
+        variable STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER : integer range 0 to NB_PLAYERS - 1 := 0;
+        variable STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE : STATE_GAME_PLAYERS_BOMB_CHECK_STATE := PROCESS_START_STATE;
+        
+        -- STATE_GAME_GRID_UPDATE
+        type STATE_GAME_GRID_UPDATE_STATE is (
             PROCESS_START_STATE,
             PROCESS_WAITING_FIRST_RESULT,
             PROCESS_CHECK
         );
-
-        variable current_state : process_state_type := PROCESS_START_STATE;
+        
+        variable STATE_GAME_GRID_UPDATE_CURRENT_POSITION : grid_position := (0,0);
+        variable STATE_GAME_GRID_UPDATE_CURRENT_STATE : STATE_GAME_GRID_UPDATE_STATE := PROCESS_START_STATE;
     begin
         if rising_edge(CLK) then
-            if GAME_STATE = STATE_GAME_GRID_UPDATE then
-                case current_state is
-                    when PROCESS_START_STATE =>
-                        current_position := (0, 0);
-                        current_state := PROCESS_WAITING_FIRST_RESULT;
-                    when PROCESS_WAITING_FIRST_RESULT =>
-                        current_position := INCR_POSITION_LINEAR(current_position);
-                        current_state := PROCESS_CHECK;
-                    when PROCESS_CHECK =>
-                        case in_read_block.category is 
-                            when others => null;
-                        end case;
+            case GAME_STATE is
+                when STATE_GAME_PLAYERS_BOMB_CHECK =>
+                    case STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE is
+                        when PROCESS_START_STATE =>
+                            STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER := 0;
+                            s_bomb_check_ended <= '0';
+                            STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_START_PLAYER_CHECK;
+                        when PROCESS_START_PLAYER_CHECK =>
+                            if players_fifo_empty(STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER) = '0' then
+                                players_fifo_read_en(STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER) <= '1';
+                                STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_NEXT_ACTION_LOADED;
+                            else
+                                STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER := (STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER + 1) mod NB_PLAYERS;
+                            end if;
+                        when PROCESS_LOADING_PLAYER_NEXT_ACTION =>
+                            players_fifo_read_en(STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER) <= '0';
+                            STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_NEXT_ACTION_LOADED;
+                        when PROCESS_NEXT_ACTION_LOADED =>
+                            -- Check the data
+                            case players_fifo_data_out(STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER).category is
+                                when PLANT_NORMAL_BOMB =>
+                                    out_grid_position <= players_grid_position(STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER);
+                                    out_block <= (BOMB_BLOCK_0, 0, 0, players_fifo_data_out(STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER).created, STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER);
+                                    out_write <= '1';
+                                when others => null;
+                            end case;
+    
+                            STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_ACTION_PROCESSED;
+                        when PROCESS_ACTION_PROCESSED =>
+                            out_write <= '0';
+                            if STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER = NB_PLAYERS - 1 then
+                                STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_END_STATE;
+                            else
+                                STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER := (STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER + 1) mod NB_PLAYERS;
+                                STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_START_PLAYER_CHECK;
+                            end if;
+                        when PROCESS_END_STATE =>
+                            s_bomb_check_ended <= '1';
+                            STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE := PROCESS_START_STATE;
+                        when others => null;
+                    end case;
+                when STATE_GAME_GRID_UPDATE =>
+                    case STATE_GAME_GRID_UPDATE_CURRENT_STATE is
+                        when PROCESS_START_STATE =>
+                            STATE_GAME_GRID_UPDATE_CURRENT_POSITION := (0, 0);
+                            STATE_GAME_GRID_UPDATE_CURRENT_STATE := PROCESS_WAITING_FIRST_RESULT;
+                        when PROCESS_WAITING_FIRST_RESULT =>
+                            STATE_GAME_GRID_UPDATE_CURRENT_POSITION := INCR_POSITION_LINEAR(STATE_GAME_GRID_UPDATE_CURRENT_POSITION);
+                            STATE_GAME_GRID_UPDATE_CURRENT_STATE := PROCESS_CHECK;
+                        when PROCESS_CHECK =>
+                            case in_read_block.category is 
+                                when others => null;
+                            end case;
+    
+                            STATE_GAME_GRID_UPDATE_CURRENT_POSITION := INCR_POSITION_LINEAR(STATE_GAME_GRID_UPDATE_CURRENT_POSITION);
+                        when others => null;
+                    end case;
 
-                        current_position := INCR_POSITION_LINEAR(current_position);
-                    when others => null;
-                end case;
-
-                out_grid_position <= current_position;
-            end if;
+                    out_grid_position <= STATE_GAME_GRID_UPDATE_CURRENT_POSITION;
+                when others => null;
+            end case;
         end if;
     end process;
-
-    process(CLK)
-    begin
-        if rising_edge(CLK) then
-        end if;
-    end process;
-
-    process(CLK)
-    begin
-        if rising_edge(CLK) then
-        end if;
-    end process;
-
 end architecture;
