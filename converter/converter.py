@@ -5,6 +5,7 @@ from os.path import isfile, join
 import numpy as np
 import struct
 from modes import Mode
+from vhdl_generator import *
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION
@@ -13,7 +14,7 @@ from modes import Mode
 output_resize = False
 output_size = 50, 50
 
-output_mode = Mode.IMAGE # Mode.IMAGE / Mode.VHDL
+output_mode = Mode.VHDL # Mode.IMAGE / Mode.VHDL
 
 output_transparent_color = "0D543D"
 input_transparent_color = ["99D8E8", "253F90", "3B3320"]
@@ -202,7 +203,7 @@ for infile in images_names:
             print(outfile_name + " generated")
 
         if output_mode == Mode.VHDL:
-            pass
+            generate_converter(bits_resolution, available_color)
 
     except IOError:
         print("cannot create thumbnail for '%s'" % infile)
