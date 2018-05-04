@@ -83,7 +83,7 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
     l.append(TAB * 2 + 'in_sprite_row : integer range 0 to ' + str(max_h - 1) + ';')
     l.append(TAB * 2 + 'in_sprite_col : integer range 0 to ' + str(max_w - 1) + ';')
     l.append("")
-    l.append(TAB * 2 + 'out_color : std_logic_vector(' + str(bits_precision - 1) + ' downto 0)')
+    l.append(TAB * 2 + 'out_color : std_logic_vector(' + str(bits_precision - 1) + ' downto 0) := (others => \'0\')')
     l.append(TAB + ");")
 
     l.append("end " + entity_name + ";")
@@ -120,7 +120,7 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
             if (k != len(images_description) - 1) or (i != len(descriptor) - 1):
                 line_str += ","
 
-            l.append(TAB * 3 + line_str)
+            l.append(TAB * 4 + line_str)
 
     l.append(TAB * 3 + ");")
 
