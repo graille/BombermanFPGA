@@ -1,3 +1,8 @@
+--
+-- Author : Thibault PIANA
+-- This module return the number of milliseconds since the last reset
+-- 
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.std_logic_unsigned.all;
