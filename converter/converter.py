@@ -11,13 +11,13 @@ from vhdl_generator import *
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-output_resize = False
-output_size = 50, 50
+output_resize = True
+output_width = 40
 
 output_mode = Mode.VHDL # Mode.IMAGE / Mode.VHDL
 
 output_transparent_color = "0D543D"
-input_transparent_color = ["99D8E8", "253F90", "3B3320"]
+input_transparent_color = ["99D8E8", "253F90", "3B3320", "157E1F"]
 images_available_extensions = ["jpg", "jpeg", "bmp", "tiff", "png", "gif"]
 
 bits_resolution = 5
@@ -140,20 +140,26 @@ def hexToTuple(hex):
     return struct.unpack('BBB', rgbstr.decode('hex'))
 
 used_colors = []
+images_descriptor = []
 for infile in images_names:
     try:
         im = Image.open(infile)
+        print("-----------------------------")
+        print("Process : " + str(infile))
         print("Image original size : " + repr(im.size))
 
         if output_resize:
-            im.thumbnail(output_size, Image.NEAREST)
+            wpercent = (output_width / float(im.size[0]))
+            hsize = int((float(im.size[1]) * float(wpercent)))
+            im = im.resize((output_width, hsize), Image.NEAREST)
+
             print("Image new size : " + repr(im.size))
 
         # Get image pixel array
         p = np.asarray(im)
 
-        max_w = max(im.size[0], output_size[0]) if output_resize else im.size[0]
-        max_h = max(im.size[1], output_size[1]) if output_resize else im.size[1]
+        max_w = im.size[0]
+        max_h = im.size[1]
 
         output_image_description = [[] for i in range(max_h)]
 
@@ -203,10 +209,14 @@ for infile in images_names:
             print(outfile_name + " generated")
 
         if output_mode == Mode.VHDL:
-            generate_converter(bits_resolution, available_color)
+            images_descriptor.append(output_image_description)
 
     except IOError:
         print("cannot create thumbnail for '%s'" % infile)
+
+if output_mode == Mode.VHDL:
+    generate_converter(bits_resolution, available_color)
+    generate_rom(bits_resolution, available_color, images_descriptor)
 
 # List unused colors
 print("")

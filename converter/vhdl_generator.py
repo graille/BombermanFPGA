@@ -12,9 +12,9 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
 
     l.append("entity " + entity_name + " is")
 
-    #l.append(TAB + "generic (")
-    #l.append(TAB * 2 + 'SPRITE_COLOR_PRECISION : integer := ' + str(bits_precision))
-    #l.append(TAB + ");")
+    # l.append(TAB + "generic (")
+    # l.append(TAB * 2 + 'SPRITE_COLOR_PRECISION : integer := ' + str(bits_precision))
+    # l.append(TAB + ");")
 
     l.append(TAB + "port (")
     l.append(TAB * 2 + 'in_color : std_logic_vector(' + str(bits_precision - 1) + ' downto 0);')
@@ -59,13 +59,12 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
             f.write(line + NEWLINE)
 
 
-def generate_rom(bits_precision, colors_list_rgb, images_description, entity_name="sprite_rom"):
+def generate_rom(bits_precision, colors_list, images_description, entity_name="sprite_rom"):
     l = []
+    max_w = max(map(lambda x: len(x[0]), images_description))
+    max_h = max(map(len, images_description))
 
-    max_w = 0
-    max_h = 0
-
-    total_rows = 0
+    total_rows = sum(map(len, images_description))
 
     # Entity declaration
     l.append("library IEEE;")
@@ -77,6 +76,9 @@ def generate_rom(bits_precision, colors_list_rgb, images_description, entity_nam
 
     l.append(TAB + "port (")
     l.append(TAB * 2 + 'clk : std_logic;')
+
+    l.append("")
+
     l.append(TAB * 2 + 'in_sprite_nb : integer range 0 to ' + str(len(images_description) - 1) + ';')
     l.append(TAB * 2 + 'in_sprite_row : integer range 0 to ' + str(max_h - 1) + ';')
     l.append(TAB * 2 + 'in_sprite_col : integer range 0 to ' + str(max_w - 1) + ';')
@@ -91,24 +93,59 @@ def generate_rom(bits_precision, colors_list_rgb, images_description, entity_nam
     # Architecture
     l.append("architecture behavioural of " + entity_name + " is")
     l.append(TAB + "subtype word_t is std_logic_vector(" + str(bits_precision - 1) + " downto 0);")
-    l.append(TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0, " + str(max_w - 1) + " downto 0) of word_t;")
-    l.append("begin")
+    l.append(TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0, " + str(
+        max_w - 1) + " downto 0) of word_t := init_mem;")
 
     l.append("")
-    l.append(TAB + "process(clk)")
-    l.append(TAB*2 + 'variable real_row : integer range 0 to ' + str(total_rows - 1) + ';')
+
+    l.append(TAB + "function init_mem ")
+
+    l.append(TAB * 2 + "return memory_t is")
+    l.append(TAB * 2 + "begin")
+
+    l.append(TAB * 3 + "return (")
+
+    for k, descriptor in enumerate(images_description):
+        for i, line in enumerate(descriptor):
+            line_str = "("
+
+            for j, pixel in enumerate(line):
+                line_str += "\"" + '{0:05b}'.format(pixel) + "\""
+
+                if j != len(line) - 1:
+                    line_str += ","
+
+            line_str += ")"
+
+            if (k != len(images_description) - 1) or (i != len(descriptor) - 1):
+                line_str += ","
+
+            l.append(TAB * 3 + line_str)
+
+    l.append(TAB * 3 + ");")
+
+    l.append(TAB + "end init_rom")
+
+    l.append("begin")
+
+    l.append(TAB + "process(clk, in_sprite_nb, in_sprite_row, in_sprite_col)")
+    l.append(TAB * 2 + 'variable real_row : integer range 0 to ' + str(total_rows - 1) + ';')
     l.append(TAB + "begin")
 
     cumulative_rows = 0
     l.append(TAB * 2 + "case in_sprite_nb is")
     for i, desc in enumerate(images_description):
-        l.append(TAB * 3 + "when " + str(i) + " =>")
-        l.append(TAB*4 + "real_row <= " + str(cumulative_rows) + " + in_sprite_row")
+        if cumulative_rows != 0:
+            l.append(TAB * 3 + "when " + str(i) + " =>" + " real_row <= " + str(cumulative_rows) + " + in_sprite_row;")
+        else:
+            l.append(TAB * 3 + "when " + str(i) + " =>" + " real_row <= in_sprite_row;")
 
         cumulative_rows += len(desc)
 
     l.append(TAB * 3 + "when others => null;")
     l.append(TAB * 2 + "end case;")
+
+    l.append("")
 
     l.append(TAB * 2 + "if rising_edge(clk) then")
     l.append(TAB * 3 + "out_color <= rom(real_row, in_sprite_col);")
