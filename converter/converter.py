@@ -14,7 +14,7 @@ from vhdl_generator import *
 output_resize = True
 output_width = 40
 
-output_mode = Mode.VHDL # Mode.IMAGE / Mode.VHDL
+output_mode = Mode.VHDL  # Mode.IMAGE / Mode.VHDL
 
 output_transparent_color = "0D543D"
 input_transparent_color = ["99D8E8", "253F90", "3B3320", "157E1F"]
@@ -76,21 +76,21 @@ available_color = [  # 31 colors maximum (+ transparent)
     output_transparent_color
 ]
 
-
 # ------------------------------------------------------------------------------
 # PROCESSING
 # ------------------------------------------------------------------------------
 
 
 images_path = sys.argv[1]
-images_tmp_names = [f for f in listdir(images_path) if isfile(join(images_path, f))]
+images_name_without_path = [f for f in listdir(images_path) if isfile(join(images_path, f))]
+images_name_without_path.sort()  # Alphabetical sort
 images_names = []
 
 # Check colors number
 print("Number of selected colors : " + str(len(available_color)))
 assert (len(available_color) <= 2 ** bits_resolution)
 
-for i, im in enumerate(images_tmp_names):
+for i, im in enumerate(images_name_without_path):
     if im.split('.')[-1] in images_available_extensions:
         images_names += [(images_path + "/" + im).replace("//", "/")]
 
@@ -138,6 +138,7 @@ def tupleToHex(tuple):
 
 def hexToTuple(hex):
     return struct.unpack('BBB', rgbstr.decode('hex'))
+
 
 used_colors = []
 images_descriptor = []
@@ -216,7 +217,7 @@ for infile in images_names:
 
 if output_mode == Mode.VHDL:
     generate_converter(bits_resolution, available_color)
-    generate_rom(bits_resolution, available_color, images_descriptor)
+    generate_rom(bits_resolution, available_color, images_descriptor, images_name_without_path)
 
 # List unused colors
 print("")

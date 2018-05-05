@@ -17,11 +17,11 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
     # l.append(TAB + ");")
 
     l.append(TAB + "port (")
-    l.append(TAB * 2 + 'in_color : std_logic_vector(' + str(bits_precision - 1) + ' downto 0);')
+    l.append(TAB * 2 + 'in_color : in std_logic_vector(' + str(bits_precision - 1) + ' downto 0);')
     l.append("")
-    l.append(TAB * 2 + 'out_color_R : std_logic_vector(7 downto 0);')
-    l.append(TAB * 2 + 'out_color_G : std_logic_vector(7 downto 0);')
-    l.append(TAB * 2 + 'out_color_B : std_logic_vector(7 downto 0)')
+    l.append(TAB * 2 + 'out_color_R : out std_logic_vector(7 downto 0);')
+    l.append(TAB * 2 + 'out_color_G : out std_logic_vector(7 downto 0);')
+    l.append(TAB * 2 + 'out_color_B : out std_logic_vector(7 downto 0)')
     l.append(TAB + ");")
 
     l.append("end " + entity_name + ";")
@@ -59,7 +59,7 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
             f.write(line + NEWLINE)
 
 
-def generate_rom(bits_precision, colors_list, images_description, entity_name="sprite_rom"):
+def generate_rom(bits_precision, colors_list, images_description, images_names, entity_name="sprite_rom"):
     l = []
     max_w = max(map(lambda x: len(x[0]), images_description))
     max_h = max(map(len, images_description))
@@ -75,15 +75,15 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
     l.append("entity " + entity_name + " is")
 
     l.append(TAB + "port (")
-    l.append(TAB * 2 + 'clk : std_logic;')
+    l.append(TAB * 2 + 'clk : in std_logic;')
 
     l.append("")
 
-    l.append(TAB * 2 + 'in_sprite_nb : integer range 0 to ' + str(len(images_description) - 1) + ';')
-    l.append(TAB * 2 + 'in_sprite_row : integer range 0 to ' + str(max_h - 1) + ';')
-    l.append(TAB * 2 + 'in_sprite_col : integer range 0 to ' + str(max_w - 1) + ';')
+    l.append(TAB * 2 + 'in_sprite_nb : in integer range 0 to ' + str(len(images_description) - 1) + ';')
+    l.append(TAB * 2 + 'in_sprite_row : in integer range 0 to ' + str(max_h - 1) + ';')
+    l.append(TAB * 2 + 'in_sprite_col : in integer range 0 to ' + str(max_w - 1) + ';')
     l.append("")
-    l.append(TAB * 2 + 'out_color : std_logic_vector(' + str(bits_precision - 1) + ' downto 0) := (others => \'0\')')
+    l.append(TAB * 2 + 'out_color : out std_logic_vector(' + str(bits_precision - 1) + ' downto 0) := (others => \'0\')')
     l.append(TAB + ");")
 
     l.append("end " + entity_name + ";")
@@ -94,7 +94,7 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
     l.append("architecture behavioural of " + entity_name + " is")
     l.append(TAB + "subtype word_t is std_logic_vector(" + str(bits_precision - 1) + " downto 0);")
     l.append(TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0, " + str(
-        max_w - 1) + " downto 0) of word_t := init_mem;")
+        max_w - 1) + " downto 0) of word_t;")
 
     l.append("")
 
@@ -106,6 +106,8 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
     l.append(TAB * 3 + "return (")
 
     for k, descriptor in enumerate(images_description):
+        l.append(TAB*4 + "-- " + str(images_names[k]))
+
         for i, line in enumerate(descriptor):
             line_str = "("
 
@@ -122,14 +124,21 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
 
             l.append(TAB * 4 + line_str)
 
+        if k != len(images_description) - 1:
+            l.append("")
+
     l.append(TAB * 3 + ");")
 
-    l.append(TAB + "end init_rom")
+    l.append(TAB + "end init_mem;")
+
+    l.append("")
+
+    l.append(TAB + "constant rom : memory_t := init_mem;")
+    l.append(TAB + 'signal real_row : integer range 0 to ' + str(total_rows - 1) + ' := 0;')
 
     l.append("begin")
 
-    l.append(TAB + "process(clk, in_sprite_nb, in_sprite_row, in_sprite_col)")
-    l.append(TAB * 2 + 'variable real_row : integer range 0 to ' + str(total_rows - 1) + ';')
+    l.append(TAB + "process(in_sprite_nb, in_sprite_row, in_sprite_col)")
     l.append(TAB + "begin")
 
     cumulative_rows = 0
@@ -144,8 +153,12 @@ def generate_rom(bits_precision, colors_list, images_description, entity_name="s
 
     l.append(TAB * 3 + "when others => null;")
     l.append(TAB * 2 + "end case;")
+    l.append(TAB + "end process;")
 
     l.append("")
+
+    l.append(TAB + "process(clk)")
+    l.append(TAB + "begin")
 
     l.append(TAB * 2 + "if rising_edge(clk) then")
     l.append(TAB * 3 + "out_color <= rom(real_row, in_sprite_col);")
