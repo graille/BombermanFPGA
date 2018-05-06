@@ -39,9 +39,8 @@ wire [31:0]keycode;
 
 always @(posedge(CLK100MHZ))begin
     CLK50MHZ<=~CLK50MHZ;
+    out_keycode <= keycode;
 end
-
-out_keycode <= keycode;
 
 PS2Receiver keyboard (
 .clk(CLK50MHZ),

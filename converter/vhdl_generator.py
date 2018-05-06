@@ -92,9 +92,8 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     # Architecture
     l.append("architecture behavioural of " + entity_name + " is")
-    l.append(TAB + "subtype word_t is std_logic_vector(" + str(bits_precision - 1) + " downto 0);")
-    l.append(TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0, " + str(
-        max_w - 1) + " downto 0) of word_t;")
+    l.append(TAB + "subtype word_t is std_logic_vector(" + str(max_w - 1) + " downto 0);")
+    l.append(TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0) of word_t;")
 
     l.append("")
 
@@ -109,15 +108,12 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
         l.append(TAB*4 + "-- " + str(images_names[k]))
 
         for i, line in enumerate(descriptor):
-            line_str = "("
+            line_str = "(\""
 
             for j, pixel in enumerate(line):
-                line_str += "\"" + '{0:05b}'.format(pixel) + "\""
+                line_str += '{0:05b}'.format(pixel)
 
-                if j != len(line) - 1:
-                    line_str += ","
-
-            line_str += ")"
+            line_str += "\")"
 
             if (k != len(images_description) - 1) or (i != len(descriptor) - 1):
                 line_str += ","
@@ -135,6 +131,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l.append(TAB + "constant rom : memory_t := init_mem;")
     l.append(TAB + 'signal real_row : integer range 0 to ' + str(total_rows - 1) + ' := 0;')
+    l.append(TAB + 'out_color_reg : std_logic_vector(' + str(bits_precision - 1) + ' downto 0) := (others => \'0\');')
 
     l.append("begin")
 
@@ -161,10 +158,12 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
     l.append(TAB + "begin")
 
     l.append(TAB * 2 + "if rising_edge(clk) then")
-    l.append(TAB * 3 + "out_color <= rom(real_row, in_sprite_col);")
+    l.append(TAB * 3 + "out_color_reg <= (rom(real_row))(((in_sprite_col + 1) * " + str(bits_precision) + " - 1) downto (in_sprite_col * " + str(bits_precision) + "));")
     l.append(TAB * 2 + "end if;")
 
     l.append(TAB + "end process;")
+
+    l.append(TAB + "out_color <= out_color_reg;")
 
     l.append("end behavioural;")
 

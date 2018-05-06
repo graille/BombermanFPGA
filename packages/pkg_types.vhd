@@ -41,6 +41,7 @@ package PROJECT_TYPES_PKG is
         X               : natural range 0 to (2**VECTOR_PRECISION) - 1;
         Y               : natural range 0 to (2**VECTOR_PRECISION) - 1;
     end record;
+    type array_vector is array(natural range <>) of vector;
 
     type grid_position is record
         i : natural range 0 to (ROWS - 1);
