@@ -54,6 +54,7 @@ architecture behaviorial of graphic_controller is
     signal sprite_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
 
     constant TRANSPARENT_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '1');
+    constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := '01010';
 begin
     out_request_pos <= next_pos;
 
@@ -104,9 +105,12 @@ begin
                     -- Calculate pixel
                     if sprite_current_color /= TRANSPARENT_COLOR then
                         out_pixel_value <= sprite_current_color;
-                        out_pixel_x <= current_grid_position.i * BLOCK_HEIGHT + current_block_position.X
-                        out_pixel_y <= current_grid_position.j * BLOCK_WIDTH + current_block_position.Y
+                    else
+                        out_pixel_value <= BACKGROUND_COLOR;
                     end if;
+
+                    out_pixel_x <= current_grid_position.i * BLOCK_HEIGHT + current_block_position.X;
+                    out_pixel_y <= current_grid_position.j * BLOCK_WIDTH + current_block_position.Y;
 
                     -- Map sprites ROM entries
                     sprite_nb <= in_block.category;
