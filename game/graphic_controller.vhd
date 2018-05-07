@@ -33,8 +33,8 @@ architecture behaviorial of graphic_controller is
     signal current_grid_position, next_grid_position : grid_position := (0, 0);
 
     type block_position_type is record
-        X : integer range 0 to BLOCK_HEIGHT - 1;
-        Y : range 0 to BLOCK_WIDTH - 1;
+        X : integer range 0 to BLOCK_GRAPHIC_HEIGHT - 1;
+        Y : range 0 to BLOCK_GRAPHIC_WIDTH - 1;
 
         -- Info :
         -- O-------> Y axis
@@ -109,8 +109,8 @@ begin
                         out_pixel_value <= BACKGROUND_COLOR;
                     end if;
 
-                    out_pixel_x <= current_grid_position.i * BLOCK_HEIGHT + current_block_position.X;
-                    out_pixel_y <= current_grid_position.j * BLOCK_WIDTH + current_block_position.Y;
+                    out_pixel_x <= current_grid_position.i * BLOCK_GRAPHIC_HEIGHT + current_block_position.X;
+                    out_pixel_y <= current_grid_position.j * BLOCK_GRAPHIC_WIDTH + current_block_position.Y;
 
                     -- Map sprites ROM entries
                     sprite_nb <= in_block.category;
@@ -118,11 +118,11 @@ begin
                     sprite_col <= next_block_position.Y;
 
                     -- Update state
-                    if (current_block_position.Y = BLOCK_WIDTH - 1) and (current_block_position.X = BLOCK_HEIGHT - 1) then
+                    if (current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1) and (current_block_position.X = BLOCK_GRAPHIC_HEIGHT - 1) then
                         next_block_position <= (0, 0);
                         next_state <= ROTATE_STATE;
                     else
-                        if current_block_position.Y = BLOCK_WIDTH - 1 then
+                        if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
                             next_block_position.Y <= 0;
                             next_block_position.X <= current_block_position.X + 1;
                         else
