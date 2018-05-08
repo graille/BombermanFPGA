@@ -8,6 +8,8 @@ entity collision_detector_rect_rect is
     port(
         o_pos, t_pos : in vector;
         o_dim, t_dim : in vector;
+
+        -- Are two blocks colliding signal
         is_colliding : out std_logic := '0'
     );
 end collision_detector_rect_rect;

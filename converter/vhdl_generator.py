@@ -61,6 +61,17 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
 
 def generate_rom(bits_precision, colors_list, images_description, images_names, entity_name="sprite_rom"):
     l = []
+
+    assets_repartition = {}
+
+    for i, name in enumerate(images_names):
+        image_splitted_name = name.split("_")
+        image_id = image_splitted_name[0]
+
+        if image_id not in assets_repartition.keys():
+            assets_repartition.image_id = {}
+
+
     max_w = max(map(lambda x: len(x[0]), images_description))
     max_h = max(map(len, images_description))
 
@@ -79,7 +90,10 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l.append("")
 
-    l.append(TAB * 2 + 'in_sprite_nb : in integer range 0 to ' + str(len(images_description) - 1) + ';')
+    l.append(TAB * 2 + 'in_sprite_id : in block_category_type;')
+    l.append(TAB * 2 + 'in_sprite_state : in state_type;')
+    l.append(TAB * 2 + 'in_sprite_direction : in direction_type;')
+
     l.append(TAB * 2 + 'in_sprite_row : in integer range 0 to ' + str(max_h - 1) + ';')
     l.append(TAB * 2 + 'in_sprite_col : in integer range 0 to ' + str(max_w - 1) + ';')
     l.append("")

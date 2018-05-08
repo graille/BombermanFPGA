@@ -7,8 +7,8 @@ entity player_to_grid is
     port(
         in_player_position : in vector;
 
-        out_i : out integer range 0 to ROWS - 1;
-        out_j : out integer range 0 to COLS - 1
+        out_i : out integer range 0 to GRID_ROWS - 1;
+        out_j : out integer range 0 to GRID_COLS - 1
     );
 end player_to_grid;
 

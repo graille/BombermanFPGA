@@ -27,8 +27,6 @@ entity game_controller is
         out_grid_position : out grid_position;
         out_block : out block_type;
         out_write : out std_logic
-
-        --grid : out td_array_cube_types(ROWS - 1 downto 0, COLS - 1 downto 0)
     );
 end game_controller;
 
@@ -76,7 +74,7 @@ architecture behavioural of game_controller is
 
     -- FSM signals
     signal s_start_finished : std_logic;
-    
+
     signal s_grid_initialized : std_logic;
     signal s_death_mode_ended : std_logic;
 
@@ -92,21 +90,21 @@ architecture behavioural of game_controller is
         port(
             clk, rst : in std_logic;
             in_io : in io_signal;
-            
+
             s_start_finished : in std_logic;
             s_grid_initialized : in std_logic;
             s_death_mode_ended : in std_logic;
-    
+
             s_bomb_check_ended : in std_logic;
-    
+
             s_bomb_will_explode : in std_logic;
             s_bomb_has_exploded : in std_logic;
-    
+
             s_players_dog_updated : in std_logic;
-    
+
             in_clk_count : in clk_count;
             in_millisecond : in millisecond_count;
-    
+
             out_game_state : out game_state_type
         );
     end component;
@@ -174,9 +172,9 @@ begin
             clk => clk,
             rst => rst,
             in_io => in_io,
-            
+
             s_start_finished => s_start_finished,
-            
+
             s_grid_initialized => s_grid_initialized,
             s_death_mode_ended => s_death_mode_ended,
 
@@ -290,7 +288,7 @@ begin
             case GAME_STATE is
                 when STATE_START =>
                     s_start_finished <= '1';
-                when STATE_MENU_LOADING => 
+                when STATE_MENU_LOADING =>
                     s_start_finished <= '0';
                 when STATE_GAME_PLAYERS_BOMB_CHECK =>
                     case STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE is

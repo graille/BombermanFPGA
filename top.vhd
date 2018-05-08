@@ -4,17 +4,19 @@ use IEEE.numeric_std.all;
 use work.PROJECT_TYPES_PKG.all;
 use work.PROJECT_RECT_PKG.all;
 
-entity top is 
+entity top is
     generic (
         FREQUENCY: integer := 100000000;
-        
-        GAME_ROWS : integer := 12;
-        GAME_COLS : integer := 16
+
+        SEED_LENGTH : integer := 16
     );
     port (
         -- Basic inputs
         CLK, RST : in std_logic;
-        
+
+        -- Switches (to configure seeds for PRNG)
+        SW : in std_logic_vector(SEED_LENGTH - 1 downto 0);
+
         -- VGA Outputs
         VGA_HS_O : out  STD_LOGIC;
         VGA_VS_O : out  STD_LOGIC;
@@ -28,7 +30,7 @@ architecture behavioural of top is
 
 -- Signals
 signal current_pixel : pixel;
-signal current_block : block_type; 
+signal current_block : block_type;
 
 component graphic_controller is
     port(
@@ -38,14 +40,16 @@ end component;
 
 component game_controller is
     generic(
-        ROWS : integer;
-        COLS : integer;
+        GRID_ROWS : integer;
+        GRID_COLS : integer;
         FREQUENCY : integer;
-        NB_PLAYERS : integer
+        NB_PLAYERS : integer;
+
+        SEED_LENGTH : integer
     );
     port(
         CLK, RST : in std_logic;
-    
+
         game_end : out std_logic := '0';
         game_winner : out integer range 0 to NB_PLAYERS - 1
     );
@@ -54,8 +58,8 @@ end component;
 begin
     GAME_CONTROLLER_GENERATED:game_controller
     generic map (
-        ROWS => GAME_ROWS,
-        COLS => GAME_COLS,
+        GRID_ROWS => GAME_ROWS,
+        GRID_COLS => GAME_COLS,
         FREQUENCY => FREQUENCY,
         NB_PLAYERS => 1
     )
@@ -63,11 +67,11 @@ begin
         CLK => CLK,
         RST => RST
     );
-    
+
     GAME_INFO_FOR_GRAPHIC_RAM:entity work.block_ram
     generic map (
-        ROWS => GAME_ROWS,
-        COLS => GAME_COLS
+        GRID_ROWS => GAME_ROWS,
+        GRID_COLS => GAME_COLS
     )
     port map (
         -- Port A
@@ -76,20 +80,20 @@ begin
         i_a => 0,
         j_a => 0,
         data_a  => (0,0,0),
-         
+
         -- Port B
         i_b => 0,
         j_b => 0,
         q_b => current_block
     );
-    
-    
+
+
     GRAPHIC_CONTROLLER_GENERATED:graphic_controller
     port map (
         CLK => CLK,
         RST => RST
     );
-    
+
     -- Graphic drivers
     PIXEL_RAM:entity work.pixel_ram
     generic map (
@@ -102,15 +106,15 @@ begin
         a_wr   => '0',
         a_addr => 0,
         a_din  => ((others=>'0'),(others=>'0'),(others=>'0')),
-        
+
         -- Port B
         b_clk  => CLK,
         b_addr => 0,
         b_dout => current_pixel
     );
-    
+
     VGA_DRIVER:entity work.VGA_CONTROLLER
-    port map ( 
+    port map (
         CLK_I => CLK,
         VGA_HS_O  => VGA_HS_O,
         VGA_VS_O => VGA_VS_O,

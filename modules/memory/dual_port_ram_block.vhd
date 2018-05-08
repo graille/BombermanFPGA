@@ -9,15 +9,14 @@ entity block_ram is
         ROWS : integer := 12;
         COLS : integer := 16
     );
-    port
-    (
+    port (
         clk : in std_logic;
-        
+
         data_a	 : in block_type;
         i_a, i_b : in natural range 0 to (ROWS - 1);
         j_a, j_b : in natural range 0 to (COLS - 1);
         we_a	 : in std_logic := '0';
-        
+
         q_a		 : out block_type;
         q_b		 : out block_type
     );
@@ -29,12 +28,11 @@ architecture rtl of block_ram is
 
 	-- Declare the RAM
 	signal ram : memory_t;
-	
 	signal addr_a, addr_b : natural range 0 to ((ROWS * COLS) - 1);
 begin
     addr_a <= i_a * COLS + j_a;
     addr_b <= i_b * COLS + j_b;
-    
+
 	-- Port A
 	process(clk)
 	begin
@@ -45,7 +43,7 @@ begin
             q_a <= ram(addr_a);
 		end if;
 	end process;
-	
+
     -- Port B
     process(clk)
     begin

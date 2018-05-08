@@ -23,19 +23,12 @@ package PROJECT_TYPES_PKG is
     subtype state_type is natural range 0 to 2**STATE_PRECISION - 1;
     type block_type is record
 	    category	    : block_category_type;                        -- The block category (see dedicated package)
-	    state		    : state_type;  -- The state of animation of the block
-	    direction		: direction_type;                       -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
+	    state		    : state_type;                                 -- The state of animation of the block
+	    direction		: direction_type;                             -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
         last_update     : millisecond_count;                          -- Last time the block has been updated, usefull to manage animations
         owner : natural range 0 to NB_PLAYERS - 1;                    -- Only used by bombs and explosions to assign points to players
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
-
-    type pixel is record
-        R               : std_logic_vector(PIXEL_PRECISION - 1 downto 0);
-        G               : std_logic_vector(PIXEL_PRECISION - 1 downto 0);
-        B               : std_logic_vector(PIXEL_PRECISION - 1 downto 0);
-    end record;
-    type array_pixel is array(natural range <>) of pixel;
 
     type vector is record
         X               : natural range 0 to (2**VECTOR_PRECISION) - 1;
@@ -44,8 +37,8 @@ package PROJECT_TYPES_PKG is
     type array_vector is array(natural range <>) of vector;
 
     type grid_position is record
-        i : natural range 0 to (ROWS - 1);
-        j : natural range 0 to (COLS - 1);
+        i : natural range 0 to (GRID_ROWS - 1);
+        j : natural range 0 to (GRID_COLS - 1);
     end record;
 
     -- IO_Signals
@@ -62,8 +55,9 @@ package PROJECT_TYPES_PKG is
     constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0);
 
     -- Processed constants
-    constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / COLS, 2**(VECTOR_PRECISION) / COLS);
-
+    constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / GRID_COLS, 2**(VECTOR_PRECISION) / GRID_COLS);
+    constant DEFAULT_PLAYER_HITBOX : vector := ()(DEFAULT_BLOCK_SIZE.X * 2) / 3, (DEFAULT_BLOCK_SIZE.Y * 2) / 3);
+    
     function INCR_POSITION_LINEAR(pos : in grid_position)
         return grid_position;
 
@@ -75,9 +69,9 @@ package body PROJECT_TYPES_PKG is
     function INCR_POSITION_LINEAR(pos : in grid_position)
         return grid_position is
     begin
-       if pos = (ROWS - 1, COLS - 1) then
+       if pos = (GRID_ROWS - 1, GRID_COLS - 1) then
            return (0, 0);
-       elsif pos.j = (COLS - 1) then
+       elsif pos.j = (GRID_COLS - 1) then
            return (pos.i + 1, 0);
        else
            return (pos.i, pos.j + 1);
@@ -89,9 +83,9 @@ package body PROJECT_TYPES_PKG is
        return grid_position is
    begin
     -- TODO
-      if pos = (ROWS - 1, COLS - 1) then
+      if pos = (GRID_ROWS - 1, GRID_COLS - 1) then
           return (0, 0);
-      elsif pos.j = (COLS - 1) then
+      elsif pos.j = (GRID_COLS - 1) then
           return (pos.i + 1, 0);
       else
           return (pos.i, pos.j + 1);
