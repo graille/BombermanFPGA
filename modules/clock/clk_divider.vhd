@@ -4,8 +4,7 @@ use IEEE.numeric_std.ALL;
 
 entity clk_divider is
     generic(
-        F_IN : integer := 100000000;
-        F_OUT : integer := 78250000
+        N : integer := 2
     )
     port (
         clk,reset: in std_logic;
@@ -13,24 +12,22 @@ entity clk_divider is
     );
 end clk_divider;
 
-architecture bhv of Clock_Divider is
+architecture bhv of clk_divider is
     signal count: integer:=1;
     signal tmp : std_logic := '0';
 begin
-
-process(clk,reset)
-begin
-    if reset = '1' then
-        count <= 1;
-        tmp <= '0';
-    elsif(clk'event and clk='1') then
-        count <=count+1;
-        if (count = F_IN / F_OUT) then
-            tmp <= NOT tmp;
+    process(clk,reset)
+    begin
+        if reset = '1' then
             count <= 1;
+            tmp <= '0';
+        elsif rising_edge(clk) then
+            count <=count+1;
+            if (count = N) then
+                tmp <= NOT tmp;
+                count <= 1;
+            end if;
         end if;
-    end if;
-    clock_out <= tmp;
-end process;
-
+        clock_out <= tmp;
+    end process;
 end bhv;

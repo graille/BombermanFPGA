@@ -110,8 +110,8 @@ def diff_calculator(elt):
     )
 
 
-def tupleToHex(tuple):
-    return ('%02x%02x%02x' % tuple)
+def tupleToHex(tu):
+    return ('%02x%02x%02x' % tu)
 
 
 def hexToTuple(hex):
@@ -122,6 +122,10 @@ images_paths = sys.argv[1::]
 print(images_paths)
 used_colors = []
 
+# Check colors number
+print("Number of selected colors : " + str(len(available_color)))
+assert (len(available_color) <= 2 ** bits_resolution)
+
 for images_path in images_paths:
     images_path = images_path + '/'
     images_path = images_path.replace("//", "/")
@@ -129,10 +133,6 @@ for images_path in images_paths:
     images_name_without_path = [f for f in listdir(images_path) if isfile(join(images_path, f))]
     images_name_without_path = sorted(images_name_without_path, key=get_key)  # Alphabetical sort
     images_names = []
-
-    # Check colors number
-    print("Number of selected colors : " + str(len(available_color)))
-    assert (len(available_color) <= 2 ** bits_resolution)
 
     for i, im in enumerate(images_name_without_path):
         if im.split('.')[-1] in images_available_extensions:
@@ -184,13 +184,13 @@ for images_path in images_paths:
                         if len(p[i, j]) == 4 and p[i, j][3] < 20:
                             hex_p = output_transparent_color
                         else:
-                            tuple = (p[i, j][0], p[i, j][1], p[i, j][2])
-                            hex_tmp = tupleToHex(tuple)
+                            tu = (p[i, j][0], p[i, j][1], p[i, j][2])
+                            hex_tmp = tupleToHex(tu)
 
                             if hex_tmp.upper() in input_transparent_color:
                                 hex_p = output_transparent_color
                             else:
-                                differences_list = diff_calculator(tuple)
+                                differences_list = diff_calculator(tu)
                                 differences_list.sort()
                                 real_tuple = differences_list[0][1]
 

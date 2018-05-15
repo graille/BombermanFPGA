@@ -245,7 +245,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l += [TAB + "end process;"]
 
-    l += [TAB + "out_color <= out_color_reg(((in_sprite_col + 1) * " + str(bits_precision - 1) + ") downto (in_sprite_col * " + str(bits_precision) + "));"]
+    l += [TAB + "out_color <= out_color_reg(((in_sprite_col + 1) * " + str(bits_precision) + ") - 1 downto (in_sprite_col * " + str(bits_precision) + "));"]
 
     l += ["end behavioural;"]
 
