@@ -52,12 +52,14 @@ package PROJECT_TYPES_PKG is
 	    state		    : state_type;
 	    direction		: direction_type; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
     end record;
+    type array_player_status_type is array(natural range <>) of player_status_type;
+
     constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0);
 
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / GRID_COLS, 2**(VECTOR_PRECISION) / GRID_COLS);
-    constant DEFAULT_PLAYER_HITBOX : vector := ()(DEFAULT_BLOCK_SIZE.X * 2) / 3, (DEFAULT_BLOCK_SIZE.Y * 2) / 3);
-    
+    constant DEFAULT_PLAYER_HITBOX : vector := ((DEFAULT_BLOCK_SIZE.X * 2) / 3, (DEFAULT_BLOCK_SIZE.Y * 2) / 3);
+
     function INCR_POSITION_LINEAR(pos : in grid_position)
         return grid_position;
 

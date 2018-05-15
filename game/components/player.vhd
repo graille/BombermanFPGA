@@ -6,6 +6,7 @@ use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
 use work.PROJECT_PLAYER_ACTIONS_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
+use work.PROJECT_BLOCKS_PKG.all;
 
 entity player is
     generic(
@@ -203,5 +204,4 @@ begin
     out_player_status <= (player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
-    out_hitbox <= player_hitbox;
 end player;

@@ -15,6 +15,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.std_logic_unsigned.all;
 
+use work.PROJECT_PARAMS_PKG.all;
+
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -25,9 +27,12 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity VGA_CONTROLLER is
-    Port ( CLK_I : in  STD_LOGIC;
-           VGA_HS_O : out  STD_LOGIC;
-           VGA_VS_O : out  STD_LOGIC;
+    port ( 
+        CLK_I : in  STD_LOGIC;
+        CLK_O : out STD_LOGIC;
+        VGA_HS_O : out  STD_LOGIC;
+        VGA_VS_O : out  STD_LOGIC
+    );
 end VGA_CONTROLLER;
 
 architecture Behavioral of VGA_CONTROLLER is
@@ -141,7 +146,8 @@ clk_div_inst : clk_wiz_0
  ------------------------------------------------------
  -------         SYNC GENERATION                 ------
  ------------------------------------------------------
-
+  CLK_O <= pxl_clk;
+  
   process (pxl_clk)
   begin
     if (rising_edge(pxl_clk)) then
@@ -186,11 +192,7 @@ clk_div_inst : clk_wiz_0
       end if;
     end if;
   end process;
-
-
-  active <= '1' when ((h_cntr_reg < FRAME_WIDTH) and (v_cntr_reg < FRAME_HEIGHT))else
-            '0';
-
+  
   process (pxl_clk)
   begin
     if (rising_edge(pxl_clk)) then
@@ -201,5 +203,4 @@ clk_div_inst : clk_wiz_0
 
   VGA_HS_O <= h_sync_dly_reg;
   VGA_VS_O <= v_sync_dly_reg;
-
 end Behavioral;

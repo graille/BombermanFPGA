@@ -12,12 +12,12 @@ from vhdl_generator import *
 # ------------------------------------------------------------------------------
 
 output_resize = True
-output_width = 40
+output_width = 50
 
 output_mode = Mode.VHDL  # Mode.IMAGE / Mode.VHDL
 
 output_transparent_color = "0D543D"
-input_transparent_color = ["99D8E8", "253F90", "3B3320", "157E1F"]
+input_transparent_color = ["99D8E8", "253F90", "3B3320", "157E1F", "8689D4"]
 images_available_extensions = ["jpg", "jpeg", "bmp", "tiff", "png", "gif"]
 
 bits_resolution = 5
@@ -80,37 +80,15 @@ available_color = [  # 31 colors maximum (+ transparent)
 # PROCESSING
 # ------------------------------------------------------------------------------
 
+def get_key(s) :
+    key = [0, 0, 0]
+    s_splitted = s.split('_')
 
-images_path = sys.argv[1]
-images_name_without_path = [f for f in listdir(images_path) if isfile(join(images_path, f))]
-images_name_without_path.sort()  # Alphabetical sort
-images_names = []
+    key[0] = int(s_splitted[0])
+    key[1] = s_splitted[2] if len(s_splitted) >= 3 else 0
+    key[2] = s_splitted[3] if len(s_splitted) >= 4 else 0
 
-# Check colors number
-print("Number of selected colors : " + str(len(available_color)))
-assert (len(available_color) <= 2 ** bits_resolution)
-
-for i, im in enumerate(images_name_without_path):
-    if im.split('.')[-1] in images_available_extensions:
-        images_names += [(images_path + "/" + im).replace("//", "/")]
-
-print("Images founded : " + str(images_names))
-
-# Check entries and uppercase colors
-for i, c in enumerate(available_color):
-    available_color[i] = c.upper()
-
-for i, c in enumerate(input_transparent_color):
-    input_transparent_color[i] = c.upper()
-
-for i, e in enumerate(images_available_extensions):
-    images_available_extensions[i] = e.lower()
-
-# Converting available color to tuple
-available_color_rgb = []
-for c in available_color:
-    available_color_rgb += [tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))]
-
+    return tuple(key)
 
 # Processing functions
 def diff_calculator(elt):
@@ -139,92 +117,127 @@ def tupleToHex(tuple):
 def hexToTuple(hex):
     return struct.unpack('BBB', rgbstr.decode('hex'))
 
+images_paths = sys.argv[1::]
 
-used_colors = []
-images_descriptor = []
-for infile in images_names:
-    try:
-        im = Image.open(infile)
-        print("-----------------------------")
-        print("Process : " + str(infile))
-        print("Image original size : " + repr(im.size))
+for images_path in images_paths:
+    images_name_without_path = [f for f in listdir(images_path) if isfile(join(images_path, f))]
+    images_name_without_path = sorted(images_name_without_path, key=get_key)  # Alphabetical sort
+    images_names = []
 
-        if output_resize:
-            wpercent = (output_width / float(im.size[0]))
-            hsize = int((float(im.size[1]) * float(wpercent)))
-            im = im.resize((output_width, hsize), Image.NEAREST)
+    # Check colors number
+    print("Number of selected colors : " + str(len(available_color)))
+    assert (len(available_color) <= 2 ** bits_resolution)
 
-            print("Image new size : " + repr(im.size))
+    for i, im in enumerate(images_name_without_path):
+        if im.split('.')[-1] in images_available_extensions:
+            images_names += [(images_path + "/" + im).replace("//", "/")]
 
-        # Get image pixel array
-        p = np.asarray(im)
+    print("Images found : " + str(images_name_without_path))
 
-        max_w = im.size[0]
-        max_h = im.size[1]
+    # Check entries and uppercase colors
+    for i, c in enumerate(available_color):
+        available_color[i] = c.upper()
 
-        output_image_description = [[] for i in range(max_h)]
+    for i, c in enumerate(input_transparent_color):
+        input_transparent_color[i] = c.upper()
 
-        for i in range(max_h):
-            for j in range(max_w):
-                try:
-                    if len(p[i, j]) == 4 and p[i, j][3] < 20:
-                        hex_p = output_transparent_color
-                    else:
-                        tuple = (p[i, j][0], p[i, j][1], p[i, j][2])
-                        hex_tmp = tupleToHex(tuple)
+    for i, e in enumerate(images_available_extensions):
+        images_available_extensions[i] = e.lower()
 
-                        if hex_tmp.upper() in input_transparent_color:
+    # Converting available color to tuple
+    available_color_rgb = []
+    for c in available_color:
+        available_color_rgb += [tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))]
+
+
+    used_colors = []
+    images_descriptor = []
+    for infile in images_names:
+        try:
+            im = Image.open(infile)
+            print("-----------------------------")
+            print("Process : " + str(infile))
+            print("Image original size : " + repr(im.size))
+
+            if output_resize:
+                wpercent = (output_width / float(im.size[0]))
+                hsize = int((float(im.size[1]) * float(wpercent)))
+                im = im.resize((output_width, hsize), Image.NEAREST)
+
+                print("Image new size : " + repr(im.size))
+
+            # Get image pixel array
+            p = np.asarray(im)
+
+            max_w = im.size[0]
+            max_h = im.size[1]
+
+            output_image_description = [[] for i in range(max_h)]
+
+            for i in range(max_h):
+                for j in range(max_w):
+                    try:
+                        if len(p[i, j]) == 4 and p[i, j][3] < 20:
                             hex_p = output_transparent_color
                         else:
-                            differences_list = diff_calculator(tuple)
-                            differences_list.sort()
-                            real_tuple = differences_list[0][1]
+                            tuple = (p[i, j][0], p[i, j][1], p[i, j][2])
+                            hex_tmp = tupleToHex(tuple)
 
-                            hex_p = tupleToHex(real_tuple)
-                except IndexError:
-                    hex_p = output_transparent_color
+                            if hex_tmp.upper() in input_transparent_color:
+                                hex_p = output_transparent_color
+                            else:
+                                differences_list = diff_calculator(tuple)
+                                differences_list.sort()
+                                real_tuple = differences_list[0][1]
 
-                hex_p = hex_p.upper()
-                h_index = available_color.index(hex_p)
-                output_image_description[i] += [int(h_index)]
+                                hex_p = tupleToHex(real_tuple)
+                    except IndexError:
+                        hex_p = output_transparent_color
 
-        # Save used colors
-        for l, _ in enumerate(output_image_description):
-            for p in output_image_description[l]:
-                if p not in used_colors:
-                    used_colors.append(p)
+                    hex_p = hex_p.upper()
+                    h_index = available_color.index(hex_p)
+                    output_image_description[i] += [int(h_index)]
 
-        if output_mode == Mode.IMAGE:
-            print("Image reconstitution")
-            im2 = Image.new(im.mode, im.size)
-            pixelList = []
+            # Save used colors
+            for l, _ in enumerate(output_image_description):
+                for p in output_image_description[l]:
+                    if p not in used_colors:
+                        used_colors.append(p)
 
-            for k, ui in enumerate(output_image_description):
-                for l, elt in enumerate(output_image_description[k]):
-                    pixelList.append(available_color_rgb[elt])
+            if output_mode == Mode.IMAGE:
+                print("Image reconstitution")
+                im2 = Image.new(im.mode, im.size)
+                pixelList = []
 
-            outfile_name = os.path.splitext(infile)[0] + "_processed.bmp"
+                for k, ui in enumerate(output_image_description):
+                    for l, elt in enumerate(output_image_description[k]):
+                        pixelList.append(available_color_rgb[elt])
 
-            im2.putdata(pixelList)
-            im2.save(outfile_name, "BMP")
-            print(outfile_name + " generated")
+                outfile_name = os.path.splitext(infile)[0] + "_processed.bmp"
 
-        if output_mode == Mode.VHDL:
-            images_descriptor.append(output_image_description)
+                im2.putdata(pixelList)
+                im2.save(outfile_name, "BMP")
+                print(outfile_name + " generated")
 
-    except IOError:
-        print("cannot create thumbnail for '%s'" % infile)
+            if output_mode == Mode.VHDL:
+                images_descriptor.append(output_image_description)
+
+        except IOError:
+            print("cannot create thumbnail for '%s'" % infile)
+
+    # If we want a VHDl file, we will create a ROM file
+    if output_mode == Mode.VHDL:
+        generate_rom(bits_resolution, available_color, images_descriptor, images_name_without_path)
+
+    # List unused colors
+    print("")
+    nb = 0
+    for i, elt in enumerate(available_color):
+        if i not in used_colors:
+            print(">> Color " + str(i) + " (#" + available_color[i] + ") unused")
+            nb += 1
+
+    print("Total : " + str(nb) + " colors unused")
 
 if output_mode == Mode.VHDL:
     generate_converter(bits_resolution, available_color)
-    generate_rom(bits_resolution, available_color, images_descriptor, images_name_without_path)
-
-# List unused colors
-print("")
-nb = 0
-for i, elt in enumerate(available_color):
-    if i not in used_colors:
-        print(">> Color " + str(i) + " (#" + available_color[i] + ") unused")
-        nb += 1
-
-print("Total : " + str(nb) + " colors unused")

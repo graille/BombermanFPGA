@@ -41,7 +41,7 @@ package PROJECT_PARAMS_PKG is
     constant V_POL : std_logic := '1';
 
     constant BLOCK_GRAPHIC_WIDTH : integer := FRAME_WIDTH / GRID_COLS;
-    constant BLOCK_GRAPHIC_HEIGHT : intger := FRAME_HEIGHT / GRID_ROWS;
+    constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / GRID_ROWS;
 
     constant CHARACTER_HEIGHT : integer := 61;
     constant CHARACTER_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;

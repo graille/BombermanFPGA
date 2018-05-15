@@ -17,7 +17,12 @@ entity graphic_controller is
 
         out_pixel_value : out integer range 0 to 4;
         out_pixel_x : out integer range 0 to FRAME_WIDTH - 1;
-        out_pixel_y : out integer range 0 to FRAME_HEIGHT - 1
+        out_pixel_y : out integer range 0 to FRAME_HEIGHT - 1;
+
+        -- Players informations
+        players_position : in array_vector(NB_PLAYERS - 1 downto 0);
+        players_status : in array_player_status_type(NB_PLAYERS - 1 downto 0);
+        players_alive : in std_logic_vector(NB_PLAYERS - 1 downto 0)
     );
 end graphic_controller;
 
@@ -87,6 +92,7 @@ begin
     process(in_block, current_state, next_block_position, current_block_position,
         current_grid_position, next_grid_position,
         sprite_current_color)
+        variable
     begin
         if rst = '1' then
             next_state <= START_STATE;
@@ -130,7 +136,7 @@ begin
                         end if;
                     end if;
                 when CALCULATE_PLAYER_STATE =>
-                    -- TODO
+
                     null;
                 when others => null;
             end case;
