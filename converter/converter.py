@@ -12,7 +12,7 @@ from vhdl_generator import *
 # ------------------------------------------------------------------------------
 
 output_resize = True
-output_width = 50
+output_width = 40
 
 output_mode = Mode.VHDL  # Mode.IMAGE / Mode.VHDL
 
@@ -88,7 +88,7 @@ def get_key(s) :
     key[1] = s_splitted[2] if len(s_splitted) >= 3 else 0
     key[2] = s_splitted[3] if len(s_splitted) >= 4 else 0
 
-    return tuple(key)
+    return (key[0], key[1], key[2])
 
 # Processing functions
 def diff_calculator(elt):
@@ -119,7 +119,13 @@ def hexToTuple(hex):
 
 images_paths = sys.argv[1::]
 
+print(images_paths)
+used_colors = []
+
 for images_path in images_paths:
+    images_path = images_path + '/'
+    images_path = images_path.replace("//", "/")
+
     images_name_without_path = [f for f in listdir(images_path) if isfile(join(images_path, f))]
     images_name_without_path = sorted(images_name_without_path, key=get_key)  # Alphabetical sort
     images_names = []
@@ -132,7 +138,7 @@ for images_path in images_paths:
         if im.split('.')[-1] in images_available_extensions:
             images_names += [(images_path + "/" + im).replace("//", "/")]
 
-    print("Images found : " + str(images_name_without_path))
+    print("Images found in \"" + images_path + "\" : " + str(images_name_without_path))
 
     # Check entries and uppercase colors
     for i, c in enumerate(available_color):
@@ -149,8 +155,6 @@ for images_path in images_paths:
     for c in available_color:
         available_color_rgb += [tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))]
 
-
-    used_colors = []
     images_descriptor = []
     for infile in images_names:
         try:
@@ -227,7 +231,8 @@ for images_path in images_paths:
 
     # If we want a VHDl file, we will create a ROM file
     if output_mode == Mode.VHDL:
-        generate_rom(bits_resolution, available_color, images_descriptor, images_name_without_path)
+        en = str(images_path.split('/')[-2]) + "_sprite_rom"
+        generate_rom(bits_resolution, available_color, images_descriptor, images_name_without_path, en)
 
     # List unused colors
     print("")

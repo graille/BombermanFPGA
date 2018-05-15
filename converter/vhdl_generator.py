@@ -12,10 +12,6 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
 
     l += ["entity " + entity_name + " is"]
 
-    # l += [TAB + "generic ("]
-    # l += [TAB * 2 + 'SPRITE_COLOR_PRECISION : integer := ' + str(bits_precision)]
-    # l += [TAB + ");"]
-
     l += [TAB + "port ("]
     l += [TAB * 2 + 'in_color : in std_logic_vector(' + str(bits_precision - 1) + ' downto 0);']
     l += [""]
@@ -112,6 +108,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
     l += [TAB * 2 + 'in_sprite_id : in block_category_type;']
     l += [TAB * 2 + 'in_sprite_state : in state_type;']
     l += [TAB * 2 + 'in_sprite_direction : in direction_type;']
+    l += [""]
 
     l += [TAB * 2 + 'in_sprite_row : in integer range 0 to ' + str(max_h - 1) + ';']
     l += [TAB * 2 + 'in_sprite_col : in integer range 0 to ' + str(max_w - 1) + ';']
@@ -138,17 +135,19 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
     l += [TAB * 3 + "return ("]
 
     for k, descriptor in enumerate(images_description):
-        l += [TAB*4 + "-- " + str(images_names[k])]
+        l += [TAB * 4 + "-- " + str(images_names[k])]
 
         for i, line in enumerate(descriptor):
             line_bits = ""
+            f_string = "{0:0" + str(bits_precision) + "b}"
 
             for j, pixel in enumerate(line):
-                line_bits += '{0:0' + str(bits_precision) + 'b}'.format(pixel)
+                line_bits += f_string.format(pixel)
 
             if len(line_bits) % 4 == 0:
                 decimal_line = int(line_bits, 2)
-                line_bits = "{0:0" + str(int(len(line_bits) / 4)) + "x}".format(decimal_representation)
+                h_f_string = "{0:0" + str(int(len(line_bits) / 4)) + "x}"
+                line_bits = h_f_string.format(decimal_line)
                 line_bits = "x\"" + line_bits + "\""
             else:
                 line_bits = "\"" + line_bits + "\""
