@@ -42,4 +42,4 @@ begin
         and collisions(1)
         and collisions(2)
         and collisions(3);
-end architecture;
+end behavioral;

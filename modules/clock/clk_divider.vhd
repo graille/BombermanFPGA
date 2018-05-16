@@ -3,11 +3,11 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.numeric_std.ALL;
 
 entity clk_divider is
-    generic(
+    generic (
         N : integer := 2
     )
     port (
-        clk,reset: in std_logic;
+        clk, rst: in std_logic;
         clock_out: out std_logic
     );
 end clk_divider;
@@ -18,7 +18,7 @@ architecture behavioral of clk_divider is
 begin
     process(clk,reset)
     begin
-        if reset = '1' then
+        if rst = '1' then
             count <= 1;
             tmp <= '0';
         elsif rising_edge(clk) then
