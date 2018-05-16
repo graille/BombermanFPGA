@@ -4,8 +4,12 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import struct
-from modes import Mode
 from vhdl_generator import *
+from enum import Enum
+
+class Mode(Enum):
+    VHDL = 0
+    IMAGE = 1
 
 # ------------------------------------------------------------------------------
 # CONFIGURATION
