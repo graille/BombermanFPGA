@@ -10,7 +10,7 @@ entity game_fsm is
     port(
         clk, rst : in std_logic;
         in_io : in io_signal;
-        
+
         s_start_finished : in std_logic;
         s_grid_initialized : in std_logic;
         s_death_mode_ended : in std_logic;
@@ -29,7 +29,7 @@ entity game_fsm is
     );
 end game_fsm;
 
-architecture behavioural of game_fsm is
+architecture behavioral of game_fsm is
     constant CONTINUE_COMMAND : io_signal := x"0f";
 
     signal GAME_STATE, NEXT_GAME_STATE : game_state_type := STATE_START;
@@ -111,4 +111,4 @@ begin
         end if;
     end process;
 
-end architecture;
+end behavioral;

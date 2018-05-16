@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity simple_prng_lfsr is
     generic(
-        DATA_LENGTH : integer := 9; -- Number of random bits
+        DATA_LENGTH : integer := 32; -- Number of random bits
         SEED_LENGTH : integer := 16
     );
     port (
@@ -16,7 +16,7 @@ entity simple_prng_lfsr is
     );
 end entity;
 
-architecture rtl of simple_prng_lfsr is
+architecture behavioral of simple_prng_lfsr is
     signal lfsr       : std_logic_vector(DATA_LENGTH - 1 downto 0) := (others => '0');
     signal feedback   : std_logic;
 begin
@@ -36,4 +36,4 @@ begin
 
     random_output <= lfsr;
     percent <= to_integer((unsigned(lfsr) * 100) srl DATA_LENGTH);
-end architecture;
+end behavioral;

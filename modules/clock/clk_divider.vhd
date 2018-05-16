@@ -12,7 +12,7 @@ entity clk_divider is
     );
 end clk_divider;
 
-architecture bhv of clk_divider is
+architecture behavioral of clk_divider is
     signal count: integer:=1;
     signal tmp : std_logic := '0';
 begin
@@ -30,4 +30,4 @@ begin
         end if;
         clock_out <= tmp;
     end process;
-end bhv;
+end behavioral;

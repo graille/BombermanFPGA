@@ -23,7 +23,7 @@ entity block_ram is
 
 end block_ram;
 
-architecture rtl of block_ram is
+architecture behavioral of block_ram is
 	type memory_t is array((ROWS * COLS) - 1 downto 0) of block_type;
 
 	-- Declare the RAM
@@ -52,4 +52,4 @@ begin
         end if;
     end process;
 
-end rtl;
+end behavioral;

@@ -15,7 +15,7 @@ entity collision_detector_rect_rect is
 end collision_detector_rect_rect;
 
 
-architecture behavioural of collision_detector_rect_rect is
+architecture behavioral of collision_detector_rect_rect is
     signal collisions : std_logic_vector(3 downto 0) := (others => '0');
 begin
     -- Is colliding ?

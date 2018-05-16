@@ -31,7 +31,7 @@ entity player is
     );
 end player;
 
-architecture player of player is
+architecture behavioral of player is
     constant PLAYER_INITIAL_POSITION : vector := (0,0);
     constant DEFAULT_SPEED : integer := 1;
 
@@ -204,4 +204,4 @@ begin
     out_player_status <= (player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
-end player;
+end behavioral;

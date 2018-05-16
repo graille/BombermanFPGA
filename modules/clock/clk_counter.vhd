@@ -12,7 +12,7 @@ entity millisecond_counter is
     );
 end millisecond_counter;
 
-architecture behaviorial of millisecond_counter is
+architecture behavioral of millisecond_counter is
     signal tmp : integer range 0 to 2**DATA_LENGTH - 1 := 0;
 begin
     process(CLK)
@@ -28,4 +28,4 @@ begin
     end process;
 
     timer <= tmp;
-end architecture;
+end behavioral;

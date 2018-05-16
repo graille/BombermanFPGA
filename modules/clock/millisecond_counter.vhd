@@ -1,7 +1,7 @@
 --
 -- Author : Thibault PIANA
 -- This module return the number of milliseconds since the last reset
--- 
+--
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -20,7 +20,7 @@ entity millisecond_counter is
     );
 end millisecond_counter;
 
-architecture behaviorial of millisecond_counter is
+architecture behavioral of millisecond_counter is
     constant FREQUENCY_DIV : integer := FREQUENCY / 1000;
     signal millisecond : millisecond_count := 0;
 begin
@@ -41,4 +41,4 @@ begin
 
         timer <= millisecond;
     end process;
-end architecture;
+end behavioral;

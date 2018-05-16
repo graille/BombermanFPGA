@@ -12,7 +12,7 @@ entity sprite_converter is
     );
 end sprite_converter;
 
-architecture behavioural of sprite_converter is
+architecture behavioral of sprite_converter is
     signal in_color_n : integer range 0 to 2**4 := 0;
 begin
     in_color_n <= to_integer(unsigned(in_color));
@@ -151,4 +151,4 @@ begin
             when others => null;
         end case;
     end process;
-end behavioural;
+end behavioral;

@@ -23,7 +23,7 @@ entity fifo_player_action is
 	);
 end fifo_player_action;
 
-architecture Behavioral of fifo_player_action is
+architecture behavioral of fifo_player_action is
 begin
 	-- Memory Pointer Process
 	fifo_proc : process (CLK)
@@ -94,4 +94,4 @@ begin
 		end if;
 	end process;
 
-end Behavioral;
+end behavioral;

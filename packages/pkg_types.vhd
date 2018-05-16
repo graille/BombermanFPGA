@@ -54,7 +54,7 @@ package PROJECT_TYPES_PKG is
     end record;
     type array_player_status_type is array(natural range <>) of player_status_type;
 
-    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0);
+    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, D_DOWN);
 
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / GRID_COLS, 2**(VECTOR_PRECISION) / GRID_COLS);

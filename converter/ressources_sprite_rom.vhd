@@ -21,7 +21,7 @@ entity ressources_sprite_rom is
     );
 end ressources_sprite_rom;
 
-architecture behavioural of ressources_sprite_rom is
+architecture behavioral of ressources_sprite_rom is
     subtype word_t is std_logic_vector(39 downto 0);
     type memory_t is array(1639 downto 0) of word_t;
 
@@ -1860,4 +1860,4 @@ begin
         end if;
     end process;
     out_color <= out_color_reg(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
-end behavioural;
+end behavioral;

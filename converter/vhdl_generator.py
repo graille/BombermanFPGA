@@ -25,7 +25,7 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
     l += [""]
 
     # Architecture
-    l += ["architecture behavioural of " + entity_name + " is"]
+    l += ["architecture behavioral of " + entity_name + " is"]
     l += [TAB + "signal in_color_n : integer range 0 to 2**" + str(bits_precision - 1) + " := 0;"]
     l += ["begin"]
 
@@ -48,7 +48,7 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
 
     l += [TAB + "end process;"]
 
-    l += ["end behavioural;"]
+    l += ["end behavioral;"]
 
     with open(entity_name + ".vhd", 'w', encoding='utf-8') as f:
         for line in l:
@@ -121,7 +121,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
     l += [""]
 
     # Architecture
-    l += ["architecture behavioural of " + entity_name + " is"]
+    l += ["architecture behavioral of " + entity_name + " is"]
     l += [TAB + "subtype word_t is std_logic_vector(" + str(max_w - 1) + " downto 0);"]
     l += [TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0) of word_t;"]
 
@@ -247,7 +247,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l += [TAB + "out_color <= out_color_reg(((in_sprite_col + 1) * " + str(bits_precision) + ") - 1 downto (in_sprite_col * " + str(bits_precision) + "));"]
 
-    l += ["end behavioural;"]
+    l += ["end behavioral;"]
 
     with open(entity_name + ".vhd", 'w', encoding='utf-8') as f:
         for line in l:

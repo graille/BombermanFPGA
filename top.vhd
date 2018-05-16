@@ -26,7 +26,7 @@ entity top is
     );
 end top;
 
-architecture behavioural of top is
+architecture behavioral of top is
 
 -- Signals
 signal current_pixel : pixel;
@@ -122,4 +122,4 @@ begin
         VGA_B => VGA_B,
         VGA_G => VGA_G
     );
-end behavioural;
+end behavioral;

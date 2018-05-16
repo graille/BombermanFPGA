@@ -12,8 +12,8 @@ entity player_to_grid is
     );
 end player_to_grid;
 
-architecture behavioural of player_to_grid is
+architecture behavioral of player_to_grid is
 begin
     out_i <= in_player_position.X / DEFAULT_BLOCK_SIZE.X;
     out_j <= in_player_position.Y / DEFAULT_BLOCK_SIZE.Y;
-end architecture;
+end behavioral;

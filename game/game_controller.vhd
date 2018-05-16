@@ -30,7 +30,7 @@ entity game_controller is
     );
 end game_controller;
 
-architecture behavioural of game_controller is
+architecture behavioral of game_controller is
     signal GAME_STATE : game_state_type;
 
     signal millisecond : millisecond_count := 0;

@@ -26,7 +26,7 @@ entity graphic_controller is
     );
 end graphic_controller;
 
-architecture behaviorial of graphic_controller is
+architecture behavioral of graphic_controller is
     type state_type is (
         START_STATE,
         ROTATE_STATE,
@@ -142,5 +142,4 @@ begin
             end case;
         end if;
     end process;
-
-end architecture;
+end behavioral;
