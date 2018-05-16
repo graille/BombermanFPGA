@@ -21,20 +21,20 @@ begin
     -- Is colliding ?
     process(o_pos, t_pos, o_dim, t_dim)
     begin
-        if ((t_pos.x + t_dim.x) > o_pos.x) then
-            collisions(0) <= '1';
+        if (t_pos.x + t_dim.x) > o_pos.x then
+            collisions(D_UP) <= '1';
         end if;
 
-        if ((t_pos.y + t_dim.y) > o_pos.y) then
-            collisions(1) <= '1';
+        if (t_pos.y + t_dim.y) > o_pos.y then
+            collisions(D_RIGHT) <= '1';
         end if;
 
-        if ((o_pos.x + o_dim.x) > t_pos.x) then
-            collisions(2) <= '1';
+        if (o_pos.x + o_dim.x) > t_pos.x then
+            collisions(D_DOWN) <= '1';
         end if;
 
-        if ((o_pos.y + o_dim.y) > t_pos.y) then
-            collisions(3) <= '1';
+        if (o_pos.y + o_dim.y) > t_pos.y then
+            collisions(D_LEFT) <= '1';
         end if;
     end process;
 
