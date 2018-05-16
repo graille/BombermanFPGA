@@ -46,7 +46,6 @@ architecture behavioral of VGA_CONTROLLER is
         );
     end component;
 
-
     signal pxl_clk : std_logic;
 
     signal h_cntr_reg : std_logic_vector(11 downto 0) := (others =>'0');
@@ -132,5 +131,4 @@ begin
 
     VGA_HS_O <= h_sync_dly_reg;
     VGA_VS_O <= v_sync_dly_reg;
-
 end behavioral;
