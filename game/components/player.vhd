@@ -4,7 +4,6 @@ use IEEE.numeric_std.all;
 
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
-use work.PROJECT_PLAYER_ACTIONS_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
 use work.PROJECT_BLOCKS_PKG.all;
 
@@ -20,9 +19,9 @@ entity player is
         in_next_block : in block_type;
 
         out_position : out vector;
+        out_grid_position : out grid_position;
         out_is_alive : out std_logic := '1';
         out_power : out integer range 0 to MAX_PLAYER_POWER - 1;
-        out_hitbox : out vector;
 
         out_action : out player_action := EMPTY_PLAYER_ACTION;
         out_new_action : out std_logic := '0';
@@ -66,7 +65,6 @@ architecture behavioral of player is
     constant CONTROL_RIGHT : io_signal := x"fa";
 
     constant CONTROL_BOMB : io_signal := x"f1";
-
 begin
     process(clk)
         constant player_god_mode_duration : integer := 5000;

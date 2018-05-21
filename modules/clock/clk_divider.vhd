@@ -5,7 +5,7 @@ use IEEE.numeric_std.ALL;
 entity clk_divider is
     generic (
         N : integer := 2
-    )
+    );
     port (
         clk, rst: in std_logic;
         clock_out: out std_logic
@@ -16,7 +16,7 @@ architecture behavioral of clk_divider is
     signal count: integer:=1;
     signal tmp : std_logic := '0';
 begin
-    process(clk,reset)
+    process(clk, rst)
     begin
         if rst = '1' then
             count <= 1;

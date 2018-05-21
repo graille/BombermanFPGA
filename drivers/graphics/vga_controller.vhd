@@ -39,7 +39,7 @@ architecture behavioral of VGA_CONTROLLER is
     component clk_divider is
         generic (
             N : integer
-        )
+        );
         port (
             clk, rst: in std_logic;
             clock_out: out std_logic

@@ -27,34 +27,35 @@ module keyboard_top (
     input CLK100MHZ,
     input PS2_CLK,
     input PS2_DATA,
+    
     output [6:0]SEG,
     output [7:0]AN,
     output [31:0]out_keycode,
     output DP,
     output UART_TXD
-    );
+);
 
 reg CLK50MHZ=0;
-wire [31:0]keycode;
+reg [31:0]keycode;
 
-always @(posedge(CLK100MHZ))begin
+always @(posedge(CLK100MHZ)) begin
     CLK50MHZ<=~CLK50MHZ;
-    out_keycode <= keycode;
 end
 
+assign out_keycode = keycode;
+
 PS2Receiver keyboard (
-.clk(CLK50MHZ),
-.kclk(PS2_CLK),
-.kdata(PS2_DATA),
-.keycodeout(keycode[31:0])
+    .clk(CLK50MHZ),
+    .kclk(PS2_CLK),
+    .kdata(PS2_DATA),
+    .keycodeout(keycode[31:0])
 );
 
 seg7decimal sevenSeg (
-.x(keycode[31:0]),
-.clk(CLK100MHZ),
-.seg(SEG[6:0]),
-.an(AN[7:0]),
-.dp(DP)
+    .x(keycode[31:0]),
+    .clk(CLK100MHZ),
+    .seg(SEG[6:0]),
+    .an(AN[7:0]),
+    .dp(DP)
 );
-
 endmodule

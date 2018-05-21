@@ -5,7 +5,6 @@ USE IEEE.NUMERIC_STD.ALL;
 
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
-use work.PROJECT_PLAYER_ACTIONS_PKG.all;
 
 entity fifo_player_action is
 	Generic (

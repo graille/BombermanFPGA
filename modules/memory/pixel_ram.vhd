@@ -2,32 +2,29 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 use ieee.std_logic_unsigned.all;
+
+use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
 
 entity pixel_ram is
-generic (
-    WIDTH   : integer := 800;
-    HEIGHT  : integer := 600;
-    BIT_PRECISION : integer := 5
-);
 port (
     -- Port A
     a_clk   : in  std_logic;
     a_wr    : in  std_logic;
-    a_addr  : in  natural range 0 to (WIDTH * HEIGHT) - 1;
-    a_din   : in  std_logic_vector(BIT_PRECISION - 1 downto 0);
-    a_dout  : out std_logic_vector(BIT_PRECISION - 1 downto 0);
+    a_addr  : in  natural range 0 to (FRAME_WIDTH * FRAME_HEIGHT) - 1;
+    a_din   : in  std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
+    a_dout  : out std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
 
     -- Port B
     b_clk   : in  std_logic;
-    b_addr  : in  natural range 0 to (WIDTH * HEIGHT) - 1;
-    b_dout  : out std_logic_vector(BIT_PRECISION - 1 downto 0)
+    b_addr  : in  natural range 0 to (FRAME_WIDTH * FRAME_HEIGHT) - 1;
+    b_dout  : out std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0)
 );
 end pixel_ram;
 
 architecture rtl of pixel_ram is
     -- Shared memory
-    type mem_type is array (((WIDTH * HEIGHT) - 1) downto 0) of std_logic_vector(BIT_PRECISION - 1 downto 0);
+    type mem_type is array (((FRAME_WIDTH * FRAME_HEIGHT) - 1) downto 0) of std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
     signal mem : mem_type;
 begin
     -- Port A (Graphic controller)

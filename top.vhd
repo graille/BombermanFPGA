@@ -1,13 +1,13 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+
+use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
-use work.PROJECT_RECT_PKG.all;
 
 entity top is
     generic (
         FREQUENCY: integer := 100000000;
-
         SEED_LENGTH : integer := 16
     );
     port (
@@ -22,104 +22,164 @@ entity top is
         VGA_VS_O : out  STD_LOGIC;
         VGA_R : out  STD_LOGIC_VECTOR (3 downto 0);
         VGA_B : out  STD_LOGIC_VECTOR (3 downto 0);
-        VGA_G : out  STD_LOGIC_VECTOR (3 downto 0)
+        VGA_G : out  STD_LOGIC_VECTOR (3 downto 0);
+        
+        -- Keyboard inputs
+        KEYBOARD_DATA : in std_logic;
+        
+        SEG : out std_logic_vector(6 downto 0);
+        AN : out std_logic_vector(7 downto 0);
+        DP : out std_logic;
+        UART_TXD : out std_logic
     );
 end top;
 
 architecture behavioral of top is
+    -- Signals
+  signal current_block : block_type;
 
--- Signals
-signal current_pixel : pixel;
-signal current_block : block_type;
+  -- Graphic controller
+  signal in_block             : block_type;
+  signal in_players_positions : array_vector(NB_PLAYERS - 1 downto 0);
+  signal out_request_pos      : grid_position;
+  signal out_pixel_value      : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
+  signal out_pixel_position   : screen_position_type;
+  signal players_position     : array_vector(NB_PLAYERS - 1 downto 0);
+  signal players_status       : array_player_status_type(NB_PLAYERS - 1 downto 0);
+  signal players_alive        : std_logic_vector(NB_PLAYERS - 1 downto 0);
 
-component graphic_controller is
-    port(
-        CLK, RST : in std_logic
-    );
-end component;
+  -- Game controller
+  signal in_io             : io_signal;
+  signal in_read_block     : block_type;
+  signal game_end          : std_logic := '0';
+  signal game_winner       : integer range 0 to NB_PLAYERS - 1;
+  signal out_grid_position : grid_position;
+  signal out_block         : block_type;
+  signal out_write         : std_logic;
 
-component game_controller is
-    generic(
-        GRID_ROWS : integer;
-        GRID_COLS : integer;
-        FREQUENCY : integer;
-        NB_PLAYERS : integer;
+  -- Pixel ram
+  signal a_wr   : std_logic;
+  signal a_addr : natural range 0 to (FRAME_WIDTH * FRAME_HEIGHT) - 1;
+  signal a_din  : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
+  signal a_dout : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
+  signal b_clk  : std_logic;
+  signal b_addr : natural range 0 to (FRAME_WIDTH * FRAME_HEIGHT) - 1;
+  signal b_dout : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
 
-        SEED_LENGTH : integer
-    );
-    port(
-        CLK, RST : in std_logic;
+  -- Block RAM
+  signal data_a   : block_type;
+  signal p_a, p_b : grid_position;
+  signal we_a     : std_logic := '0';
+  signal q_a      : block_type;
+  signal q_b      : block_type;
 
-        game_end : out std_logic := '0';
-        game_winner : out integer range 0 to NB_PLAYERS - 1
-    );
-end component;
+  -- Sprite converter
+  signal in_color    : std_logic_vector(4 downto 0);
+  signal out_color_R : std_logic_vector(7 downto 0);
+  signal out_color_G : std_logic_vector(7 downto 0);
+  signal out_color_B : std_logic_vector(7 downto 0);
 
+  -- VGA Controller
+  signal clk_pxl    : STD_LOGIC;
+  
+  -- Keyboard
+  signal ps2_clk : std_logic;
+  signal keyboard_output : std_logic_vector(31 downto 0);
 begin
-    GAME_CONTROLLER_GENERATED:game_controller
+    I_GRAPHIC_CONTROLLER: entity work.graphic_controller
+    port map (
+        CLK                  => CLK,
+        RST                  => RST,
+        
+        in_block             => in_block,
+        in_players_positions => in_players_positions,
+        
+        out_request_pos      => out_request_pos,
+        out_pixel_value      => out_pixel_value,
+        out_pixel_position   => out_pixel_position,
+        in_players_position     => players_position,
+        in_players_status       => players_status,
+        in_players_alive        => players_alive
+    );
+
+    I_GAME_CONTROLLER: entity work.game_controller
     generic map (
-        GRID_ROWS => GAME_ROWS,
-        GRID_COLS => GAME_COLS,
-        FREQUENCY => FREQUENCY,
-        NB_PLAYERS => 1
+        SEED_LENGTH => SEED_LENGTH,
+        FREQUENCY   => FREQUENCY
     )
     port map (
-        CLK => CLK,
-        RST => RST
+        clk               => clk,
+        rst               => rst,
+        in_seed           => SW,
+        in_io             => in_io,
+        in_read_block     => in_read_block,
+        game_end          => game_end,
+        game_winner       => game_winner,
+        out_grid_position => out_grid_position,
+        out_block         => out_block,
+        out_write         => out_write,
+        
+        out_players_position     => players_position,
+        out_players_status       => players_status,
+        out_players_alive        => players_alive
     );
 
-    GAME_INFO_FOR_GRAPHIC_RAM:entity work.block_ram
-    generic map (
-        GRID_ROWS => GAME_ROWS,
-        GRID_COLS => GAME_COLS
-    )
+    I_PIXEL_RAM: entity work.pixel_ram
     port map (
-        -- Port A
-        clk  => CLK,
-        we_a   => '0',
-        i_a => 0,
-        j_a => 0,
-        data_a  => (0,0,0),
+        a_clk  => clk,
+        a_wr   => a_wr,
+        a_addr => a_addr,
+        a_din  => a_din,
+        a_dout => a_dout,
+        
+        b_clk  => clk_pxl,
+        b_addr => b_addr,
+        b_dout => b_dout
+    );
+      
+    I_KEYBOARD: entity work.keyboard_top
+    port map (
+        CLK100MHZ => clk,
+        PS2_CLK => ps2_clk,
+        PS2_DATA => KEYBOARD_DATA,
+        
+        SEG => SEG,
+        AN => AN,
+        out_keycode => keyboard_output,
+        
+        DP => DP,
+        UART_TXD => UART_TXD
+    );
+    in_io <= keyboard_output(7 downto 0);
 
-        -- Port B
-        i_b => 0,
-        j_b => 0,
-        q_b => current_block
+    I_BLOCK_RAM: entity work.block_ram
+    port map (
+        clk    => clk,
+        data_a => data_a,
+        
+        p_a    => p_a,
+        p_b    => p_b,
+        we_a   => we_a,
+        
+        q_a    => q_a,
+        q_b    => q_b
     );
 
-
-    GRAPHIC_CONTROLLER_GENERATED:graphic_controller
+    in_color <= b_dout;
+    
+    I_SPRITE_CONVERTER: entity work.sprite_converter
     port map (
-        CLK => CLK,
-        RST => RST
+        in_color    => in_color,
+        out_color_R => out_color_R,
+        out_color_G => out_color_G,
+        out_color_B => out_color_B
     );
 
-    -- Graphic drivers
-    PIXEL_RAM:entity work.pixel_ram
-    generic map (
-        WIDTH    => 800,
-        HEIGHT   => 600
-    )
+    I_VGA_CONTROLLER: entity work.VGA_CONTROLLER
     port map (
-        -- Port A
-        a_clk  => CLK,
-        a_wr   => '0',
-        a_addr => 0,
-        a_din  => ((others=>'0'),(others=>'0'),(others=>'0')),
-
-        -- Port B
-        b_clk  => CLK,
-        b_addr => 0,
-        b_dout => current_pixel
-    );
-
-    VGA_DRIVER:entity work.VGA_CONTROLLER
-    port map (
-        CLK_I => CLK,
-        VGA_HS_O  => VGA_HS_O,
-        VGA_VS_O => VGA_VS_O,
-        VGA_R => VGA_R,
-        VGA_B => VGA_B,
-        VGA_G => VGA_G
+        CLK_I    => clk,
+        CLK_O    => clk_pxl,
+        VGA_HS_O => VGA_HS_O,
+        VGA_VS_O => VGA_VS_O
     );
 end behavioral;
