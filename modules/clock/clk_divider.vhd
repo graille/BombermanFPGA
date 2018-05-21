@@ -22,7 +22,7 @@ begin
             count <= 1;
             tmp <= '0';
         elsif rising_edge(clk) then
-            count <=count+1;
+            count <= count+1;
             if (count = N) then
                 tmp <= NOT tmp;
                 count <= 1;

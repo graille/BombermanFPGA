@@ -3,7 +3,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
-use work.PROJECT_PLAYER_ACTIONS_PKG.all;
 
 package PROJECT_TYPES_PKG is
     -- Timer types

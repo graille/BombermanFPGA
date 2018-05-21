@@ -13,6 +13,6 @@ end player_to_grid;
 
 architecture behavioral of player_to_grid is
 begin
-    out_position.i <= in_player_position.X / DEFAULT_BLOCK_SIZE.X;
-    out_position.j <= in_player_position.Y / DEFAULT_BLOCK_SIZE.Y;
+    out_position.i <= (in_player_position.X + DEFAULT_PLAYER_HITBOX.X) / (2 * DEFAULT_BLOCK_SIZE.X);
+    out_position.j <= (in_player_position.Y + DEFAULT_PLAYER_HITBOX.Y) / (2 * DEFAULT_BLOCK_SIZE.Y);
 end behavioral;

@@ -13,43 +13,27 @@
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.std_logic_unsigned.all;
+use IEEE.numeric_std.all;
 
 use work.PROJECT_PARAMS_PKG.all;
+use work.PROJECT_TYPES_PKG.all;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
-library UNISIM;
-use UNISIM.VComponents.all;
-
-entity VGA_CONTROLLER is
+entity vga_controller is
     port (
         CLK_I : in  STD_LOGIC;
         CLK_O : out STD_LOGIC;
         VGA_HS_O : out  STD_LOGIC;
-        VGA_VS_O : out  STD_LOGIC
+        VGA_VS_O : out  STD_LOGIC;
+        
+        VGA_POSITION : out screen_position_type
     );
-end VGA_CONTROLLER;
+end vga_controller;
 
 architecture behavioral of VGA_CONTROLLER is
-    component clk_divider is
-        generic (
-            N : integer
-        );
-        port (
-            clk, rst: in std_logic;
-            clock_out: out std_logic
-        );
-    end component;
-
     signal pxl_clk : std_logic;
 
-    signal h_cntr_reg : std_logic_vector(11 downto 0) := (others =>'0');
-    signal v_cntr_reg : std_logic_vector(11 downto 0) := (others =>'0');
+    signal h_cntr_reg : unsigned(11 downto 0) := (others =>'0');
+    signal v_cntr_reg : unsigned(11 downto 0) := (others =>'0');
 
     signal h_sync_reg : std_logic := not(H_POL);
     signal v_sync_reg : std_logic := not(V_POL);
@@ -60,7 +44,7 @@ architecture behavioral of VGA_CONTROLLER is
     signal update_box : std_logic;
     signal pixel_in_box : std_logic;
 begin
-    CLK_DIVISER_INSTANCE : clk_divider
+    CLK_DIVISER_INSTANCE:entity work.clk_divider
         generic map (
             N => 2
         )
@@ -69,11 +53,10 @@ begin
             clk => CLK_I,
             clock_out => pxl_clk
         );
-
     ------------------------------------------------------
     -------         SYNC GENERATION                 ------
     ------------------------------------------------------
-
+    
     CLK_O <= pxl_clk;
 
     process (pxl_clk)
@@ -97,7 +80,7 @@ begin
             end if;
         end if;
     end process;
-
+    
     process (pxl_clk)
     begin
         if (rising_edge(pxl_clk)) then
@@ -108,7 +91,6 @@ begin
             end if;
         end if;
     end process;
-
 
     process (pxl_clk)
     begin
@@ -126,6 +108,14 @@ begin
         if (rising_edge(pxl_clk)) then
             v_sync_dly_reg <= v_sync_reg;
             h_sync_dly_reg <= h_sync_reg;
+        end if;
+    end process;
+    
+    process(v_cntr_reg, h_cntr_reg)
+    begin
+        if v_cntr_reg < FRAME_HEIGHT and h_cntr_reg < FRAME_WIDTH then
+            VGA_POSITION.X <= to_integer(v_cntr_reg);
+            VGA_POSITION.Y <= to_integer(h_cntr_reg);
         end if;
     end process;
 

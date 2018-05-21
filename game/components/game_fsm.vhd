@@ -48,7 +48,7 @@ begin
     out_game_state <= GAME_STATE;
 
     -- State machin
-    process(rst, in_io,
+    process(rst, in_io, GAME_STATE,
         s_start_finished, s_grid_initialized, s_death_mode_ended,
         s_bomb_check_ended, s_bomb_will_explode,
         s_players_dog_updated, in_clk_count, in_millisecond)

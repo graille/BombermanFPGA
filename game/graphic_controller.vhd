@@ -11,7 +11,6 @@ entity graphic_controller is
         CLK, RST : in std_logic;
 
         in_block : in block_type;
-        in_players_positions : in array_vector(NB_PLAYERS - 1 downto 0);
 
         out_request_pos : out grid_position;
 
@@ -84,19 +83,19 @@ begin
         out_color => sprite_current_color
     );
     
-    CHARACTERS_ROM_INSTANCE:entity work.characters_sprite_rom
-    port map (
-        clk => clk,
+    --CHARACTERS_ROM_INSTANCE:entity work.characters_sprite_rom
+    --port map (
+    --    clk => clk,
 
-        in_sprite_id => sprite_id,
-        in_sprite_state => sprite_state,
-        in_sprite_direction => sprite_direction,
+    --    in_sprite_id => sprite_id,
+    --    in_sprite_state => sprite_state,
+    --    in_sprite_direction => sprite_direction,
         
-        in_sprite_row => sprite_row,
-        in_sprite_col => sprite_col,
+    --    in_sprite_row => sprite_row,
+    --    in_sprite_col => sprite_col,
 
-        out_color => sprite_current_color
-    );
+    --    out_color => sprite_current_color
+    --);
     
 
     process(clk)

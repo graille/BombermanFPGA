@@ -36,7 +36,7 @@ module keyboard_top (
 );
 
 reg CLK50MHZ=0;
-reg [31:0]keycode;
+wire [31:0]keycode;
 
 always @(posedge(CLK100MHZ)) begin
     CLK50MHZ<=~CLK50MHZ;
