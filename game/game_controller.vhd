@@ -29,20 +29,23 @@ entity game_controller is
 
         out_players_position: out players_positions_type;
         out_players_status: out players_status_type;
-        out_players_alive: out std_logic_vector(NB_PLAYERS - 1 downto 0)
+        out_players_alive: out std_logic_vector(NB_PLAYERS - 1 downto 0);
+
+        out_time_remaining : out millisecond_count := 0
     );
 end game_controller;
 
 architecture behavioral of game_controller is
-    signal GAME_STATE : game_state_type;
-
     -- Millisecond counter
     signal millisecond : millisecond_count := 0;
     signal millisecond_counter_reset : std_logic := '0';
 
+    signal rst_millisecond_counter : std_logic := '0';
+
     -- Players attributes
     type players_block_to_process_type is array(NB_PLAYERS - 1 downto 0) of block_type;
     signal players_block_to_process : players_block_to_process_type;
+    signal players_process_blocks : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
 
     signal players_position : players_positions_type := (others => (others => 0));
     signal players_grid_position : players_grid_position_type := (others => (others => 0));
@@ -68,49 +71,65 @@ architecture behavioral of game_controller is
     signal players_fifo_empty : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
     signal players_fifo_full : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
 
-    -- FSM signals
-    signal s_start_finished : std_logic;
-
-    signal s_grid_initialized : std_logic;
-    signal s_death_mode_ended : std_logic;
-
-    signal s_bomb_check_ended : std_logic;
-
-    signal s_bomb_will_explode : std_logic;
-    signal s_bomb_has_exploded : std_logic;
-
-    signal s_players_dog_updated : std_logic;
-
     -- PRNG value
     signal prng_value: std_logic_vector(PRNG_PRECISION - 1 downto 0);
     signal prng_percent : integer range 0 to 100;
+
+    signal rst_prng : std_logic := '0';
+
+    -- Choices
+    type game_state_type is (
+        STATE_START,
+        STATE_MENU_LOADING,
+
+        STATE_MAP_INIT,
+            -- Place unbreakable blocks around the grid
+            STATE_MAP_BUILD_UNBREAKABLE_BORDER,
+            STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE,
+
+            -- Place unbreakable blocks inside the grid
+            STATE_MAP_BUILD_UNBREAKABLE_INSIDE,
+            STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE,
+
+            -- Place breakeable blocks
+            STATE_MAP_BUILD_BREAKABLE,
+            STATE_MAP_BUILD_BREAKABLE_ROTATE,
+        STATE_GAME,
+            STATE_GAME_UPDATE_TIME_REMAINING,
+
+            STATE_GAME_PLAYERS_BOMB_CHECK,
+            STATE_GAME_PLAYERS_BOMB_CHECK_ROTATE,
+
+            STATE_GAME_GRID_UPDATE,
+            STATE_GAME_GRID_UPDATE_ROTATE,
+                STATE_GAME_GRID_UPDATE_PLAYERS,
+                -- When we check a cells, we have to check adjacent cells
+                STATE_GAME_GRID_UPDATE_CHECK_CENTER,
+                STATE_GAME_GRID_UPDATE_CHECK_TOP,
+                STATE_GAME_GRID_UPDATE_CHECK_LEFT,
+                STATE_GAME_GRID_UPDATE_CHECK_BOTTOM,
+                STATE_GAME_GRID_UPDATE_CHECK_RIGHT,
+
+            STATE_CHECK_PLAYERS_DOG,
+                STATE_GAME_PLAYERS_DOG_CHECK_TOP,
+                STATE_GAME_PLAYERS_DOG_CHECK_LEFT,
+                STATE_GAME_PLAYERS_DOG_CHECK_BOTTOM,
+                STATE_GAME_PLAYERS_DOG_CHECK_RIGHT,
+        STATE_DEATH_MODE,
+            STATE_DEATH_MODE_PLACE_BLOCK,
+            STATE_DEATH_MODE_CHECK_DEATH,
+        STATE_GAME_OVER
+    );
+
+    signal next_state, current_state : game_state_type := STATE_START;
+
+    signal next_grid_position, current_grid_position : grid_position := DEFAULT_GRID_POSITION;
 begin
     out_players_position <= players_position;
     out_players_status <= players_status;
     out_players_alive <= players_alive;
 
-    MAIN_FSM: entity work.game_fsm
-        port map(
-            clk => clk,
-            rst => rst,
-            in_io => in_io,
-
-            s_start_finished => s_start_finished,
-
-            s_grid_initialized => s_grid_initialized,
-            s_death_mode_ended => s_death_mode_ended,
-
-            s_bomb_check_ended => s_bomb_check_ended,
-
-            s_bomb_will_explode => s_bomb_will_explode,
-            s_bomb_has_exploded => s_bomb_has_exploded,
-
-            s_players_dog_updated => s_players_dog_updated,
-            
-            in_millisecond => millisecond,
-
-            out_game_state => GAME_STATE
-        );
+    out_grid_position <= next_grid_position;
 
     PRNG_GENERATOR:entity work.simple_prng_lfsr
         generic map (
@@ -119,11 +138,22 @@ begin
         )
         port map (
             clk => clk,
-            rst => rst,
+            rst => RST or rst_prng,
 
             in_seed => in_seed,
             random_output => prng_value,
             percent => prng_percent
+        );
+
+    -- Millisecond counter
+    COUNTER_ENGINE:entity work.millisecond_counter
+        generic map (
+            FREQUENCY => FREQUENCY
+        )
+        port map (
+            CLK => CLK,
+            RST => RST or millisecond_counter_reset,
+            timer => millisecond
         );
 
     phy_position <= (to_integer(to_unsigned(phy_position_grid.i, 16) sll 12), to_integer(to_unsigned(phy_position_grid.j, 16) sll 12));
@@ -137,10 +167,13 @@ begin
             port map(
                 clk => CLK,
                 rst => rst,
+
                 in_millisecond => millisecond,
                 in_io => in_io,
-                in_dol => x"f",
+                in_dol => "1111",
+
                 in_next_block => players_block_to_process(k),
+                in_next_block_process => players_process_blocks(k),
 
                 out_position => players_position(k),
                 out_is_alive => players_alive(k),
@@ -162,7 +195,7 @@ begin
                 is_colliding => players_collision(k)
             );
 
-        -- Manage the FIFO which deals with players actions
+        -- Manage the FIFO player
         players_fifo_write_en(k) <= players_new_action(k);
         players_fifo_data_in(k) <= players_next_action(k);
 
@@ -188,41 +221,37 @@ begin
             );
     end generate;
 
-    -- Millisecond counter
-    COUNTER_ENGINE:entity work.millisecond_counter
-    generic map (
-        FREQUENCY => FREQUENCY
-    )
-    port map(
-        CLK => CLK,
-        RST => RST or millisecond_counter_reset,
-        timer => millisecond
-    );
-
     process(CLK)
-        -- STATE_GAME_PLAYERS_BOMB_CHECK
-        type STATE_GAME_PLAYERS_BOMB_CHECK_STATE is (
-            PROCESS_START_STATE,
-            PROCESS_START_PLAYER_CHECK,
-            PROCESS_LOADING_PLAYER_NEXT_ACTION,
-            PROCESS_NEXT_ACTION_LOADED,
-            PROCESS_ACTION_PROCESSED,
-            PROCESS_END_STATE
-        );
-
-        variable STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_PLAYER : integer range 0 to NB_PLAYERS - 1 := 0;
-        variable STATE_GAME_PLAYERS_BOMB_CHECK_CURRENT_STATE : STATE_GAME_PLAYERS_BOMB_CHECK_STATE := PROCESS_START_STATE;
-
-        -- STATE_GAME_GRID_UPDATE
-        type STATE_GAME_GRID_UPDATE_STATE is (
-            PROCESS_START_STATE,
-            PROCESS_WAITING_FIRST_RESULT,
-            PROCESS_CHECK
-        );
-
-        variable STATE_GAME_GRID_UPDATE_CURRENT_POSITION : grid_position := (0,0);
-        variable STATE_GAME_GRID_UPDATE_CURRENT_STATE : STATE_GAME_GRID_UPDATE_STATE := PROCESS_START_STATE;
     begin
+        if rising_edge(CLK) then
+            current_state <= next_state;
+            current_grid_position <= next_grid_position;
+        end if;
+    end process;
 
+    -- Reset controller
+    process(GAME_STATE)
+    begin
+        if GAME_STATE = START_STATE then
+            rst_prng <= '1';
+            rst_millisecond_counter <= '1';
+        else
+            rst_prng <= '0';
+            rst_millisecond_counter <= '0';
+        end if;
+    end process;
+
+    process(current_state)
+    begin
+        if RST = '1' then
+            next_grid_position <= DEFAULT_GRID_POSITION;
+            next_state <= START_STATE;
+        else
+            case current_state is
+                when START_STATE =>
+                    next_grid_position <= DEFAULT_GRID_POSITION;
+                when
+            end case;
+        end if;
     end process;
 end architecture;

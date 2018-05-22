@@ -24,7 +24,7 @@ entity vga_controller is
         CLK_O : out STD_LOGIC;
         VGA_HS_O : out  STD_LOGIC;
         VGA_VS_O : out  STD_LOGIC;
-        
+
         VGA_POSITION : out screen_position_type
     );
 end vga_controller;
@@ -44,6 +44,7 @@ architecture behavioral of VGA_CONTROLLER is
     signal update_box : std_logic;
     signal pixel_in_box : std_logic;
 begin
+    -- 50.000 Mhz block clock divider
     CLK_DIVISER_INSTANCE:entity work.clk_divider
         generic map (
             N => 2
@@ -56,7 +57,7 @@ begin
     ------------------------------------------------------
     -------         SYNC GENERATION                 ------
     ------------------------------------------------------
-    
+
     CLK_O <= pxl_clk;
 
     process (pxl_clk)
@@ -80,7 +81,7 @@ begin
             end if;
         end if;
     end process;
-    
+
     process (pxl_clk)
     begin
         if (rising_edge(pxl_clk)) then
@@ -110,7 +111,7 @@ begin
             h_sync_dly_reg <= h_sync_reg;
         end if;
     end process;
-    
+
     process(v_cntr_reg, h_cntr_reg)
     begin
         if v_cntr_reg < FRAME_HEIGHT and h_cntr_reg < FRAME_WIDTH then
