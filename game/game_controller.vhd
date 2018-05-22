@@ -115,6 +115,9 @@ architecture behavioral of game_controller is
                 STATE_GAME_PLAYERS_DOG_CHECK_LEFT,
                 STATE_GAME_PLAYERS_DOG_CHECK_BOTTOM,
                 STATE_GAME_PLAYERS_DOG_CHECK_RIGHT,
+
+            STATE_CHECK_DEATH_MODE,
+
         STATE_DEATH_MODE,
             STATE_DEATH_MODE_PLACE_BLOCK,
             STATE_DEATH_MODE_CHECK_DEATH,
@@ -122,8 +125,8 @@ architecture behavioral of game_controller is
     );
 
     signal next_state, current_state : game_state_type := STATE_START;
-
     signal next_grid_position, current_grid_position : grid_position := DEFAULT_GRID_POSITION;
+    signal death_mode_activated : std_logic := '0';
 begin
     out_players_position <= players_position;
     out_players_status <= players_status;
@@ -241,7 +244,7 @@ begin
         end if;
     end process;
 
-    process(current_state)
+    process(current_state, millisecond)
     begin
         if RST = '1' then
             next_grid_position <= DEFAULT_GRID_POSITION;
@@ -249,8 +252,86 @@ begin
         else
             case current_state is
                 when START_STATE =>
+                    out_write <= '0';
+                    out_block <= EMPTY_BLOCK;
+
+                    death_mode_activated <= '0';
+
                     next_grid_position <= DEFAULT_GRID_POSITION;
-                when
+                    next_state <= STATE_MENU_LOADING;
+                when STATE_MENU_LOADING =>
+                    next_state <= STATE_MAP_INIT;
+                ----------------------------------------------------------------
+                when STATE_MAP_INIT =>
+                    next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
+                when STATE_MAP_BUILD_UNBREAKABLE_BORDER =>
+                    -- Place block
+                    out_block <= UNBREAKABLE_BLOCK_1;
+                    out_write <= '1';
+
+                    next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE;
+                when STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE =>
+                    out_write <= '0';
+                    if current_grid_position /= DEFAULT_LAST_GRID_POSITION then
+                        next_grid_position <= INCR_POSITION_BORDER(current_grid_position);
+                        next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
+                    else
+                        next_grid_position <= DEFAULT_GRID_POSITION;
+                        next_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
+                    end if;
+
+                when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>
+                    if current_state.i /= 0 and current_state.i /= GRID_ROWS - 1 and (current_state.i + 1) mod 2 = 1 then
+                        if current_state.j /= 0 and current_state.j /= GRID_COLS - 1 and (current_state.j + 1) mod 2 = 1 then
+                            out_block <= UNBREAKABLE_BLOCK_2;
+                            out_write <= '1';
+                        end if;
+                    end if;
+
+                    next_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE;
+                when STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE =>
+                    out_write <= '0';
+                    if current_grid_position /= DEFAULT_LAST_GRID_POSITION then
+                        next_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                        next_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
+                    else
+                        next_grid_position <= DEFAULT_GRID_POSITION;
+                        next_state <= STATE_MAP_BUILD_BREAKABLE;
+                    end if;
+                when STATE_MAP_BUILD_BREAKABLE =>
+                    -- TODO
+                    next_state <= STATE_MAP_BUILD_BREAKABLE_ROTATE;
+                when STATE_MAP_BUILD_BREAKABLE_ROTATE =>
+                    -- TODO
+                    next_state <= STATE_GAME;
+                ----------------------------------------------------------------
+                when STATE_GAME =>
+                    if NB_PLAYERS_ALIVE(players_alive) <= 1 then
+                        next_state => STATE_GAME_OVER;
+                    else
+                        next_state => STATE_GAME_UPDATE_TIME_REMAINING;
+                    end if;
+                when STATE_GAME_UPDATE_TIME_REMAINING =>
+                    if death_mode_activated = '0' then
+                        out_time_remaining <= NORMAL_MODE_DURATION - millisecond;
+                    else
+                        out_time_remaining <= (NORMAL_MODE_DURATION + DEATH_MODE_DURATION) - millisecond;
+                    end if;
+
+                    next_state <= STATE_CHECK_DEATH_MODE;
+                when STATE_CHECK_DEATH_MODE =>
+                    if millisecond > NORMAL_MODE_DURATION then
+                        death_mode_activated <= '1';
+                    else
+                        death_mode_activated <= '0';
+                    end if;
+                    next_state <= STATE_GAME;
+                ----------------------------------------------------------------
+                when STATE_GAME_OVER =>
+                    if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 then
+                        next_state <= STATE_START;
+                    end if;
+                when others => null;
             end case;
         end if;
     end process;
