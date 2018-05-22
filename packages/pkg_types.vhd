@@ -47,7 +47,7 @@ package PROJECT_TYPES_PKG is
         j : natural range 0 to (GRID_COLS - 1);
     end record;
     constant DEFAULT_GRID_POSITION : grid_position := (0, 0);
-    
+
     type screen_position_type is record
         X : integer range 0 to FRAME_HEIGHT - 1;
         Y : integer range 0 to FRAME_WIDTH - 1;
@@ -61,19 +61,21 @@ package PROJECT_TYPES_PKG is
     -- Type for degrees of liberty (North, East, South, West)
     subtype dol_type is std_logic_vector(3 downto 0);
 
-    -- Player sdedicated types
+    -- Players dedicated types
+    subtype character_id_type is integer range 0 to NB_CHARACTER_DESIGN - 1;
     type player_status_type is record
+        id              : character_id_type;
 	    state		    : state_type;
 	    direction		: direction_type; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
     end record;
     type array_player_status_type is array(natural range <>) of player_status_type;
-    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, D_DOWN);
+    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0, D_DOWN);
 
     type player_action_category is (
         EMPTY_ACTION,
         PLANT_NORMAL_BOMB
     );
-    
+
     type player_action is record
         category  : player_action_category;
         created   : millisecond_count;
@@ -89,38 +91,4 @@ package PROJECT_TYPES_PKG is
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / GRID_COLS, 2**(VECTOR_PRECISION) / GRID_COLS);
     constant DEFAULT_PLAYER_HITBOX : vector := ((DEFAULT_BLOCK_SIZE.X * 2) / 3, (DEFAULT_BLOCK_SIZE.Y * 2) / 3);
-
-    function INCR_POSITION_LINEAR(pos : in grid_position)
-        return grid_position;
-
-    function INCR_POSITION_CIRCULAR(pos : in grid_position)
-        return grid_position;
 end package;
-
-package body PROJECT_TYPES_PKG is
-    function INCR_POSITION_LINEAR(pos : in grid_position)
-        return grid_position is
-    begin
-       if pos = (GRID_ROWS - 1, GRID_COLS - 1) then
-           return (0, 0);
-       elsif pos.j = (GRID_COLS - 1) then
-           return (pos.i + 1, 0);
-       else
-           return (pos.i, pos.j + 1);
-       end if;
-   end INCR_POSITION_LINEAR;
-
-
-   function INCR_POSITION_CIRCULAR(pos : in grid_position)
-       return grid_position is
-   begin
-    -- TODO
-      if pos = (GRID_ROWS - 1, GRID_COLS - 1) then
-          return (0, 0);
-      elsif pos.j = (GRID_COLS - 1) then
-          return (pos.i + 1, 0);
-      else
-          return (pos.i, pos.j + 1);
-      end if;
-  end INCR_POSITION_CIRCULAR;
-end package body;

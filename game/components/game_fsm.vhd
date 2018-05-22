@@ -22,7 +22,6 @@ entity game_fsm is
 
         s_players_dog_updated : in std_logic;
 
-        in_clk_count : in clk_count;
         in_millisecond : in millisecond_count;
 
         out_game_state : out game_state_type
@@ -51,7 +50,7 @@ begin
     process(rst, in_io, GAME_STATE,
         s_start_finished, s_grid_initialized, s_death_mode_ended,
         s_bomb_check_ended, s_bomb_will_explode,
-        s_players_dog_updated, in_clk_count, in_millisecond)
+        s_players_dog_updated, in_millisecond)
     begin
         if rst = '1' then
             NEXT_GAME_STATE <= STATE_START;
