@@ -298,12 +298,28 @@ begin
                         next_grid_position <= DEFAULT_GRID_POSITION;
                         next_state <= STATE_MAP_BUILD_BREAKABLE;
                     end if;
+
                 when STATE_MAP_BUILD_BREAKABLE =>
-                    -- TODO
+                    if percent > 30
+                        and in_read_block.category /= UNBREAKABLE_BLOCK_1
+                        and in_read_block.category /= UNBREAKABLE_BLOCK_2
+                    then
+                        out_write <= '1';
+                        out_block <= BREAKABLE_BLOCK_0;
+                    else
+                        out_write <= '0';
+                    end if;
+
                     next_state <= STATE_MAP_BUILD_BREAKABLE_ROTATE;
                 when STATE_MAP_BUILD_BREAKABLE_ROTATE =>
-                    -- TODO
-                    next_state <= STATE_GAME;
+                    out_write <= '0';
+                    if current_grid_position /= DEFAULT_LAST_GRID_POSITION then
+                        next_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                        next_state <= STATE_MAP_BUILD_BREAKABLE;
+                    else
+                        next_grid_position <= DEFAULT_GRID_POSITION;
+                        next_state <= STATE_GAME;
+                    end if;
                 ----------------------------------------------------------------
                 when STATE_GAME =>
                     if NB_PLAYERS_ALIVE(players_alive) <= 1 then
@@ -328,6 +344,8 @@ begin
                     next_state <= STATE_GAME;
                 ----------------------------------------------------------------
                 when STATE_GAME_OVER =>
+                    out_time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 - millisecond;
+
                     if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 then
                         next_state <= STATE_START;
                     end if;
