@@ -16,8 +16,10 @@ entity player is
         in_millisecond : in millisecond_count;
         in_io : in io_signal;
         in_dol : in dol_type;
+        
         in_next_block : in block_type;
-
+        in_next_block_process : in std_logic;
+        
         out_position : out vector;
         out_grid_position : out grid_position;
         out_is_alive : out std_logic := '1';
@@ -102,47 +104,49 @@ begin
                     player_can_plant_bomb <= '1';
                 end if;
 
-                case in_next_block.category is
-                    when EXPLOSION_BLOCK_JUNCTION | EXPLOSION_BLOCK_MIDDLE | EXPLOSION_BLOCK_END =>
-                        if player_lives = 1 then
-                            player_alive <= '0';
-                        end if;
-
-                        player_lives <= player_lives - 1;
-                    when BONUS_SPEED_BLOCK => -- Speed Bonus
-                        if player_speed < 2**12 - 1 then
-                            player_speed <= player_speed * 2;
-                        end if;
-                    when BONUS_ADD_POWER_BLOCK => -- Power Bonus
-                        if player_power < 15 then
-                            player_power <= player_power + 1;
-                        end if;
-                    when BONUS_ADD_BOMB_BLOCK => -- Add bomb Bonus
-                        if player_max_bombs < 31 then
-                            player_max_bombs <= player_max_bombs + 1;
-                        end if;
-                    when BONUS_GODMODE_BLOCK => -- God mode
-                        player_god_mode <= '1';
-                        player_god_mode_activation := in_millisecond;
-                    when BONUS_WALLHACK_BLOCK => -- Wall hack
-                        player_wall_hack <= '1';
-                        player_wall_hack_activation := in_millisecond;
-                    when BONUS_LIFE_BLOCK => -- Add live
-                        if player_lives < 3 then
-                            player_lives <= player_lives + 1;
-                        end if;
-                    -- Malus
-                    when MALUS_DISABLE_BOMBS_BLOCK => -- Disable bomb planting
-                        player_can_plant_bomb <= '0';
-                        player_no_bombs_activation := in_millisecond;
-                    when MALUS_INVERSED_COMMANDS_BLOCK => -- Activate inversed command
-                        player_inversed_commands <= '1';
-                    when MALUS_REMOVE_POWER_BLOCK => -- Power Bonus
-                        if player_power > 0 then
-                            player_power <= player_power - 1;
-                        end if;
-                    when others => null;
-                end case;
+                if in_next_block_process = '1' then
+                    case in_next_block.category is
+                        when EXPLOSION_BLOCK_JUNCTION | EXPLOSION_BLOCK_MIDDLE | EXPLOSION_BLOCK_END =>
+                            if player_lives = 1 then
+                                player_alive <= '0';
+                            end if;
+    
+                            player_lives <= player_lives - 1;
+                        when BONUS_SPEED_BLOCK => -- Speed Bonus
+                            if player_speed < 2**12 - 1 then
+                                player_speed <= player_speed * 2;
+                            end if;
+                        when BONUS_ADD_POWER_BLOCK => -- Power Bonus
+                            if player_power < 15 then
+                                player_power <= player_power + 1;
+                            end if;
+                        when BONUS_ADD_BOMB_BLOCK => -- Add bomb Bonus
+                            if player_max_bombs < 31 then
+                                player_max_bombs <= player_max_bombs + 1;
+                            end if;
+                        when BONUS_GODMODE_BLOCK => -- God mode
+                            player_god_mode <= '1';
+                            player_god_mode_activation := in_millisecond;
+                        when BONUS_WALLHACK_BLOCK => -- Wall hack
+                            player_wall_hack <= '1';
+                            player_wall_hack_activation := in_millisecond;
+                        when BONUS_LIFE_BLOCK => -- Add live
+                            if player_lives < 3 then
+                                player_lives <= player_lives + 1;
+                            end if;
+                        -- Malus
+                        when MALUS_DISABLE_BOMBS_BLOCK => -- Disable bomb planting
+                            player_can_plant_bomb <= '0';
+                            player_no_bombs_activation := in_millisecond;
+                        when MALUS_INVERSED_COMMANDS_BLOCK => -- Activate inversed command
+                            player_inversed_commands <= '1';
+                        when MALUS_REMOVE_POWER_BLOCK => -- Power Bonus
+                            if player_power > 0 then
+                                player_power <= player_power - 1;
+                            end if;
+                        when others => null;
+                    end case;
+                end if;
             end if;
         end if;
     end process;
@@ -199,7 +203,7 @@ begin
         end if;
     end process;
 
-    out_player_status <= (player_state, player_direction);
+    out_player_status <= (0, player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
 end behavioral;

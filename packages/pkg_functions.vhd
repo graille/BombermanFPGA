@@ -1,8 +1,10 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
+use work.PROJECT_TYPES_PKG.all;
 
 package PROJECT_POS_FUNCTIONS_PKG is
     -- These functions are used to navigate into the game grid
@@ -12,14 +14,14 @@ package PROJECT_POS_FUNCTIONS_PKG is
     function INCR_POSITION_BORDER(pos: in grid_position)
         return grid_position;
 
-    function INCR_POSITION_CIRCULAR(pos: in grid_position, iteration: integer)
+    function INCR_POSITION_CIRCULAR(pos: in grid_position; iteration: integer)
         return grid_position;
 
     function DECR_POSITION_LINEAR(pos: in grid_position)
         return grid_position;
 
     function NB_PLAYERS_ALIVE(players_alive: in std_logic_vector)
-        return std_logic;
+        return integer;
 end package;
 
 package body PROJECT_POS_FUNCTIONS_PKG is
@@ -47,8 +49,16 @@ package body PROJECT_POS_FUNCTIONS_PKG is
             else
                 return (pos.i + 1, 0);
             end if;
+        elsif pos.i = 0 then
+            if pos.j < GRID_COLS - 1 then
+                return (pos.i, pos.j + 1);
+            else
+                return (pos.i + 1, 0);
+            end if;
         else
-            return (pos.i, pos.j + 1);
+            if pos.j < GRID_COLS - 1 then
+                return (pos.i, pos.j + 1);
+            end if;
         end if;
     end INCR_POSITION_BORDER;
 
@@ -66,12 +76,12 @@ package body PROJECT_POS_FUNCTIONS_PKG is
     end DECR_POSITION_LINEAR;
 
     -- Circular increment
-    function INCR_POSITION_CIRCULAR(pos : in grid_position, iteration: integer)
+    function INCR_POSITION_CIRCULAR(pos : in grid_position; iteration: integer)
     return grid_position is
-        variable current_segment : integer range 0 to := 0;
-        variable add_segment : integer range 0 to MAX(GRID_COLS, GRID_ROWS) - 1 := GRID_COLS;
+        variable current_segment : integer := 0;
+        variable add_segment : integer range 0 to GRID_COLS + GRID_ROWS - 1 := GRID_COLS;
     begin
-        for k in 0 to loop
+        for k in 0 to 15 loop
             if (iteration + 1) >= (GRID_COLS * GRID_ROWS) - 1 then
                 return (0, 0);
             elsif (iteration + 1) >= current_segment and (iteration + 1) < current_segment + add_segment then
@@ -93,8 +103,8 @@ package body PROJECT_POS_FUNCTIONS_PKG is
 
     --
     function NB_PLAYERS_ALIVE(players_alive: in std_logic_vector)
-        return integer range 0 to NB_PLAYERS - 1;
-        variable nb_alive : integer range 0 to NB_PLAYERS - 1;
+        return integer is
+        variable nb_alive : integer range 0 to NB_PLAYERS - 1 := 0;
     begin
         for k in 0 to NB_PLAYERS - 1 loop
             if players_alive(k) = '1' then

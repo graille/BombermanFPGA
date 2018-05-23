@@ -38,15 +38,13 @@ package PROJECT_PARAMS_PKG is
     constant FRAME_WIDTH : natural := 800;
     constant FRAME_HEIGHT : natural := 600;
     --
-    constant H_FP : natural := 56; --H front porch width (pixels)
-    constant H_PW : natural := 120; --H sync pulse width (pixels)
-    constant H_BP : natural := 64; -- H back porch (pixels)
-    constant H_MAX : natural := H_FP + FRAME_WIDTH + H_BP; --H total period (pixels)
+    constant H_FP : natural := 40; --H front porch width (pixels)
+    constant H_PW : natural := 128; --H sync pulse width (pixels)
+    constant H_MAX : natural := 1056; --H total period (pixels)
     --
-    constant V_FP : natural := 37; --V front porch width (lines)
-    constant V_PW : natural := 6; --V sync pulse width (lines)
-    constant V_BP : natural := 23; -- V back porch (pixels)
-    constant V_MAX : natural := V_FP + FRAME_HEIGHT + V_BP; --V total period (lines)
+    constant V_FP : natural := 1; --V front porch width (lines)
+    constant V_PW : natural := 4; --V sync pulse width (lines)
+    constant V_MAX : natural := 628; --V total period (lines)
     --
     constant H_POL : std_logic := '1';
     constant V_POL : std_logic := '1';

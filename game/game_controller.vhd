@@ -7,6 +7,7 @@ use work.PROJECT_TYPES_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
 use work.PROJECT_GAME_STATES_PKG.all;
 use work.PROJECT_BLOCKS_PKG.all;
+use work.PROJECT_POS_FUNCTIONS_PKG.all;
 
 entity game_controller is
     generic(
@@ -40,7 +41,7 @@ architecture behavioral of game_controller is
     signal millisecond : millisecond_count := 0;
     signal millisecond_counter_reset : std_logic := '0';
 
-    signal rst_millisecond_counter : std_logic := '0';
+    signal rst_millisecond_counter, real_rst_millisecond_counter : std_logic := '0';
 
     -- Players attributes
     type players_block_to_process_type is array(NB_PLAYERS - 1 downto 0) of block_type;
@@ -75,7 +76,7 @@ architecture behavioral of game_controller is
     signal prng_value: std_logic_vector(PRNG_PRECISION - 1 downto 0);
     signal prng_percent : integer range 0 to 100;
 
-    signal rst_prng : std_logic := '0';
+    signal rst_prng, real_rst_prng : std_logic := '0';
 
     -- Choices
     type game_state_type is (
@@ -134,6 +135,8 @@ begin
 
     out_grid_position <= next_grid_position;
 
+
+    real_rst_prng <= RST or rst_prng;
     PRNG_GENERATOR:entity work.simple_prng_lfsr
         generic map (
             DATA_LENGTH => PRNG_PRECISION,
@@ -141,7 +144,7 @@ begin
         )
         port map (
             clk => clk,
-            rst => RST or rst_prng,
+            rst => real_rst_prng,
 
             in_seed => in_seed,
             random_output => prng_value,
@@ -149,13 +152,14 @@ begin
         );
 
     -- Millisecond counter
+    real_rst_millisecond_counter <= RST or millisecond_counter_reset;
     COUNTER_ENGINE:entity work.millisecond_counter
         generic map (
             FREQUENCY => FREQUENCY
         )
         port map (
             CLK => CLK,
-            RST => RST or millisecond_counter_reset,
+            RST => real_rst_millisecond_counter,
             timer => millisecond
         );
 
@@ -233,9 +237,9 @@ begin
     end process;
 
     -- Reset controller
-    process(GAME_STATE)
+    process(current_state)
     begin
-        if GAME_STATE = START_STATE then
+        if current_state = STATE_START then
             rst_prng <= '1';
             rst_millisecond_counter <= '1';
         else
@@ -248,12 +252,12 @@ begin
     begin
         if RST = '1' then
             next_grid_position <= DEFAULT_GRID_POSITION;
-            next_state <= START_STATE;
+            next_state <= STATE_START;
         else
             case current_state is
-                when START_STATE =>
+                when STATE_START =>
                     out_write <= '0';
-                    out_block <= EMPTY_BLOCK;
+                    out_block <= (EMPTY_BLOCK, 0, 0, millisecond, 0);
 
                     death_mode_activated <= '0';
 
@@ -266,7 +270,7 @@ begin
                     next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
                 when STATE_MAP_BUILD_UNBREAKABLE_BORDER =>
                     -- Place block
-                    out_block <= UNBREAKABLE_BLOCK_1;
+                    out_block <= (UNBREAKABLE_BLOCK_1, 0, 0, millisecond, 0);
                     out_write <= '1';
 
                     next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE;
@@ -281,9 +285,9 @@ begin
                     end if;
 
                 when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>
-                    if current_state.i /= 0 and current_state.i /= GRID_ROWS - 1 and (current_state.i + 1) mod 2 = 1 then
-                        if current_state.j /= 0 and current_state.j /= GRID_COLS - 1 and (current_state.j + 1) mod 2 = 1 then
-                            out_block <= UNBREAKABLE_BLOCK_2;
+                    if current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1 and (current_grid_position.i + 1) mod 2 = 1 then
+                        if current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1 and (current_grid_position.j + 1) mod 2 = 1 then
+                            out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0);
                             out_write <= '1';
                         end if;
                     end if;
@@ -300,12 +304,12 @@ begin
                     end if;
 
                 when STATE_MAP_BUILD_BREAKABLE =>
-                    if percent > 30
+                    if prng_percent > 30 
                         and in_read_block.category /= UNBREAKABLE_BLOCK_1
                         and in_read_block.category /= UNBREAKABLE_BLOCK_2
                     then
                         out_write <= '1';
-                        out_block <= BREAKABLE_BLOCK_0;
+                        out_block <= (BREAKABLE_BLOCK_0, 0, 0, millisecond, 0);
                     else
                         out_write <= '0';
                     end if;
@@ -323,9 +327,9 @@ begin
                 ----------------------------------------------------------------
                 when STATE_GAME =>
                     if NB_PLAYERS_ALIVE(players_alive) <= 1 then
-                        next_state => STATE_GAME_OVER;
+                        next_state <= STATE_GAME_OVER;
                     else
-                        next_state => STATE_GAME_UPDATE_TIME_REMAINING;
+                        next_state <= STATE_GAME_UPDATE_TIME_REMAINING;
                     end if;
                 when STATE_GAME_UPDATE_TIME_REMAINING =>
                     if death_mode_activated = '0' then

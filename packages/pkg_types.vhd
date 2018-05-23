@@ -47,7 +47,7 @@ package PROJECT_TYPES_PKG is
         j : natural range 0 to (GRID_COLS - 1);
     end record;
     constant DEFAULT_GRID_POSITION : grid_position := (0, 0);
-    constant DEFAULT_LAST_GRID_POSITION : grid_position := (GRID_ROWS - 1; GRID_COLS - 1);
+    constant DEFAULT_LAST_GRID_POSITION : grid_position := (GRID_ROWS - 1, GRID_COLS - 1);
 
     type screen_position_type is record
         X : integer range 0 to FRAME_HEIGHT - 1;

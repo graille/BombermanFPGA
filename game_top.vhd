@@ -71,7 +71,8 @@ architecture behavioral of GAME_TOP is
     -- VGA Controller
     signal clk_pxl    : std_logic;
     signal pixel_on_screen_position : screen_position_type;
-
+    signal VGA_active : std_logic := '0';
+    
     -- Keyboard
     signal keyboard_output : std_logic_vector(31 downto 0);
 
@@ -91,6 +92,8 @@ architecture behavioral of GAME_TOP is
         UART_TXD : out std_logic
     );
     end component;
+    
+    
 begin
     -- I/O
     LED <= SW;
@@ -179,20 +182,23 @@ begin
     I_SPRITE_CONVERTER: entity work.sprite_converter
     port map (
         in_color    => out_pixel,
-        out_color_R => VGA_R_t,
-        out_color_G => VGA_G_t,
-        out_color_B => VGA_B_t
+        out_color_R => COLOR_R,
+        out_color_G => COLOR_G,
+        out_color_B => COLOR_B
     );
 
     -- VGA Output
-    VGA_R <= COLOR_R(7 downto 4);
-    VGA_G <= COLOR_G(7 downto 4);
-    VGA_B <= COLOR_B(7 downto 4);
+    VGA_R <= COLOR_R(7 downto 4) when VGA_active = '1' else x"0";
+    VGA_G <= COLOR_G(7 downto 4) when VGA_active = '1' else x"0";
+    VGA_B <= COLOR_B(7 downto 4) when VGA_active = '1' else x"0";
 
     I_VGA_CONTROLLER: entity work.vga_controller
     port map (
         CLK_I    => clk,
         CLK_O    => clk_pxl,
+        
+        out_active => VGA_active,
+        
         VGA_HS_O => VGA_HS_O,
         VGA_VS_O => VGA_VS_O,
 

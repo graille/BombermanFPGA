@@ -5,6 +5,7 @@ use IEEE.std_logic_unsigned.all;
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
+use work.PROJECT_POS_FUNCTIONS_PKG.all;
 
 entity graphic_controller is
     port(
@@ -49,7 +50,7 @@ architecture behavioral of graphic_controller is
         X : integer range 0 to CHARACTER_HEIGHT - 1;
         Y : integer range 0 to CHARACTER_WIDTH - 1;
     end record;
-    constant DEFAULT_CHARACTER_POSITION : block_position_type := (CHARACTER_HEIGHT - 1, CHARACTER_WIDTH - 1);
+    constant DEFAULT_CHARACTER_POSITION : character_position_type := (CHARACTER_HEIGHT - 1, CHARACTER_WIDTH - 1);
 
     -- Grid signals
     signal current_state, next_state : process_state_type := START_STATE;
@@ -113,7 +114,7 @@ begin
         in_sprite_row => character_row,
         in_sprite_col => character_col,
 
-        out_color => block_current_color
+        out_color => character_current_color
     );
 
     process(clk)
@@ -164,7 +165,7 @@ begin
                     -- Go to next state
                     next_state <= WRITE_BLOCK_STATE;
                 when ROTATE_BLOCK_STATE =>
-                    if (current_grid_position.X = GRID_ROWS - 1) and (current_grid_position.Y = GRID_COLS - 1) then
+                    if (current_grid_position.i = GRID_ROWS - 1) and (current_grid_position.j = GRID_COLS - 1) then
                         next_grid_position <= DEFAULT_GRID_POSITION;
                         next_block_position <= DEFAULT_BLOCK_POSITION;
 
@@ -176,7 +177,7 @@ begin
                         next_state <= WRITE_BLOCK_STATE;
                     end if;
                 when ROTATE_CHARACTER_STATE =>
-                    if current_character_position < NB_PLAYERS - 1 then
+                    if next_character_nb < NB_PLAYERS - 1 then
                         next_character_nb <= current_character_nb + 1;
                         next_character_position <= DEFAULT_CHARACTER_POSITION;
                         next_state <= WRITE_BLOCK_STATE;
@@ -185,7 +186,7 @@ begin
                     end if;
                 when WRITE_BLOCK_STATE =>
                     if block_current_color /= TRANSPARENT_COLOR then
-                        out_pixel_value <= block_current_color;
+                        out_pixel_value <= character_current_color;
                     else
                         out_pixel_value <= BACKGROUND_COLOR;
                     end if;

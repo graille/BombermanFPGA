@@ -13,21 +13,24 @@ entity clk_divider is
 end clk_divider;
 
 architecture behavioral of clk_divider is
-    signal count: integer:=1;
+    signal count: integer := 1;
     signal tmp : std_logic := '0';
 begin
     process(clk, rst)
     begin
-        if rst = '1' then
-            count <= 1;
-            tmp <= '0';
-        elsif rising_edge(clk) then
-            count <= count+1;
-            if (count = N) then
-                tmp <= NOT tmp;
-                count <= 1;
+        if rising_edge(clk) then
+            if rst = '1' then
+                count <= 0;
+                tmp <= '0';
+            else
+                count <= count + 1;
+                if count = N then
+                    tmp <= not(tmp);
+                    count <= 1;
+                end if;
             end if;
         end if;
+        
         clock_out <= tmp;
     end process;
 end behavioral;
