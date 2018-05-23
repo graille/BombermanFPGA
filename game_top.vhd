@@ -12,7 +12,7 @@ entity GAME_TOP is
     );
     port (
         -- Basic inputs
-        CLK, RST : in std_logic;
+        CLK, RST : in std_logic := '0';
 
         -- Switches (to configure seeds for PRNG)
         SW : in std_logic_vector(NB_SWITCH - 1 downto 0);
@@ -145,6 +145,7 @@ begin
         data_a => out_block,
         p_a    => out_grid_position,
         we_a   => out_write,
+        q_a    => in_read_block,
 
         p_b    => out_request_pos,
         q_b    => in_block

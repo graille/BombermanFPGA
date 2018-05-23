@@ -45,7 +45,7 @@ package body PROJECT_POS_FUNCTIONS_PKG is
             return (0, 0);
         elsif pos.i > 0 and pos.i < GRID_ROWS - 1 then
             if pos.j = 0 then
-                return (pos.i, GRID_ROWS - 1);
+                return (pos.i, GRID_COLS - 1);
             else
                 return (pos.i + 1, 0);
             end if;

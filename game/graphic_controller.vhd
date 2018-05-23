@@ -45,12 +45,14 @@ architecture behavioral of graphic_controller is
         -- X axis
     end record;
     constant DEFAULT_BLOCK_POSITION : block_position_type := (0, 0);
+    constant DEFAULT_LAST_BLOCK_POSITION : block_position_type := (BLOCK_GRAPHIC_HEIGHT - 1, BLOCK_GRAPHIC_WIDTH - 1);
 
     type character_position_type is record
         X : integer range 0 to CHARACTER_HEIGHT - 1;
         Y : integer range 0 to CHARACTER_WIDTH - 1;
     end record;
     constant DEFAULT_CHARACTER_POSITION : character_position_type := (CHARACTER_HEIGHT - 1, CHARACTER_WIDTH - 1);
+    constant DEFAULT_LAST_CHARACTER_POSITION : character_position_type := (0, 0);
 
     -- Grid signals
     signal current_state, next_state : process_state_type := START_STATE;
@@ -165,7 +167,7 @@ begin
                     -- Go to next state
                     next_state <= WRITE_BLOCK_STATE;
                 when ROTATE_BLOCK_STATE =>
-                    if (current_grid_position.i = GRID_ROWS - 1) and (current_grid_position.j = GRID_COLS - 1) then
+                    if current_grid_position = DEFAULT_LAST_GRID_POSITION then
                         next_grid_position <= DEFAULT_GRID_POSITION;
                         next_block_position <= DEFAULT_BLOCK_POSITION;
 
@@ -180,13 +182,13 @@ begin
                     if next_character_nb < NB_PLAYERS - 1 then
                         next_character_nb <= current_character_nb + 1;
                         next_character_position <= DEFAULT_CHARACTER_POSITION;
-                        next_state <= WRITE_BLOCK_STATE;
+                        next_state <= WRITE_CHARACTER_STATE;
                     else
                         next_state <= START_STATE;
                     end if;
                 when WRITE_BLOCK_STATE =>
                     if block_current_color /= TRANSPARENT_COLOR then
-                        out_pixel_value <= character_current_color;
+                        out_pixel_value <= block_current_color;
                     else
                         out_pixel_value <= BACKGROUND_COLOR;
                     end if;
@@ -199,11 +201,11 @@ begin
                     block_state <= in_block.state;
                     block_direction <= in_block.direction;
 
-                    block_row <= next_block_position.X;
-                    block_col <= next_block_position.Y;
+                    block_row <= current_block_position.X;
+                    block_col <= current_block_position.Y;
 
                     -- Update state
-                    if (current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1) and (current_block_position.X = BLOCK_GRAPHIC_HEIGHT - 1) then
+                    if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
                         next_state <= ROTATE_BLOCK_STATE;
                     else
                         if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
@@ -228,11 +230,11 @@ begin
                         character_state <= in_players_status(current_character_nb).state;
                         character_direction <= in_players_status(current_character_nb).direction;
 
-                        character_row <= next_character_position.X;
-                        character_col <= next_character_position.Y;
+                        character_row <= current_character_position.X;
+                        character_col <= current_character_position.Y;
 
                         -- Update state
-                        if (current_character_position.Y = 0) and (current_character_position.X = 0) then
+                        if current_character_position = DEFAULT_LAST_CHARACTER_POSITION then
                             next_state <= ROTATE_CHARACTER_STATE;
                         else
                             if current_character_position.Y = 0 then
