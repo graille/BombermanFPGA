@@ -26,7 +26,7 @@ def generate_converter(bits_precision, colors_list_hex, entity_name="sprite_conv
 
     # Architecture
     l += ["architecture behavioral of " + entity_name + " is"]
-    l += [TAB + "signal in_color_n : integer range 0 to 2**" + str(bits_precision - 1) + " := 0;"]
+    l += [TAB + "signal in_color_n : integer range 0 to 2**" + str(bits_precision) + " - 1 := 0;"]
     l += ["begin"]
 
     l += [TAB + "in_color_n <= to_integer(unsigned(in_color));"]
@@ -122,7 +122,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     # Architecture
     l += ["architecture behavioral of " + entity_name + " is"]
-    l += [TAB + "subtype word_t is std_logic_vector(" + str(max_w - 1) + " downto 0);"]
+    l += [TAB + "subtype word_t is std_logic_vector(" + str(max_w*bits_precision - 1) + " downto 0);"]
     l += [TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0) of word_t;"]
 
     l += [""]
@@ -170,7 +170,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l += [TAB + "constant rom : memory_t := init_mem;"]
     l += [TAB + 'signal real_row : integer range 0 to ' + str(total_rows - 1) + ' := 0;']
-    l += [TAB + 'signal out_color_reg : std_logic_vector(' + str(max_w - 1) + ' downto 0) := (others => \'0\');']
+    l += [TAB + 'signal out_color_reg : std_logic_vector(' + str(max_w*bits_precision - 1) + ' downto 0) := (others => \'0\');']
 
     l += ["begin"]
 
