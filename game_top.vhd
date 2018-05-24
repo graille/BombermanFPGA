@@ -4,15 +4,16 @@ use IEEE.numeric_std.all;
 
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
+use work.PROJECT_BLOCKS_PKG.all;
 
 entity GAME_TOP is
     generic (
-        FREQUENCY: integer := 100000000;
+        FREQUENCY: integer := 80000000;
         NB_SWITCH : integer := 16
     );
     port (
         -- Basic inputs
-        CLK, RST : in std_logic := '0';
+        CLK100, RST : in std_logic := '0';
 
         -- Switches (to configure seeds for PRNG)
         SW : in std_logic_vector(NB_SWITCH - 1 downto 0) := (others => '0');
@@ -39,6 +40,8 @@ entity GAME_TOP is
 end GAME_TOP;
 
 architecture behavioral of GAME_TOP is
+    signal CLK : std_logic := '0';
+
     -- Signals
     signal current_block : block_type;
 
@@ -71,7 +74,7 @@ architecture behavioral of GAME_TOP is
     signal in_color    : std_logic_vector(4 downto 0);
 
     -- VGA Controller
-    signal clk_pxl    : std_logic;
+    signal CLK_VGA    : std_logic;
     signal pixel_on_screen_position : screen_position_type;
     signal VGA_active : std_logic := '0';
     
@@ -95,14 +98,31 @@ architecture behavioral of GAME_TOP is
     );
     end component;
     
-    
+    component clk_wiz_0
+    port (
+        reset : in std_logic;
+        
+        CLK_IN1  : in     std_logic;
+        CLK_OUT1 : out    std_logic;
+        CLK_OUT2 : out    std_logic
+    );
+    end component;
 begin
+    CLK_DIV : clk_wiz_0
+    port map (
+        reset => RST,
+        
+        CLK_IN1 => CLK100,
+        CLK_OUT1 => CLK_VGA,
+        CLK_OUT2 => CLK
+    );
+    
     -- I/O
     LED <= SW;
 
     I_KEYBOARD:keyboard_top
     port map (
-        CLK100MHZ => clk,
+        CLK100MHZ => CLK100,
         PS2_CLK => PS2_CLK,
         PS2_DATA => PS2_DATA,
 
@@ -152,7 +172,7 @@ begin
         p_b    => out_request_pos,
         q_b    => in_block
     );
-
+    
     -- Graphic controller
     I_GRAPHIC_CONTROLLER: entity work.graphic_controller
     port map (
@@ -173,12 +193,12 @@ begin
 
     I_PIXEL_RAM: entity work.pixel_ram
     port map (
-        a_clk  => clk,
+        a_clk  => CLK,
         a_wr   => write_pixel,
         a_pos => out_pixel_position,
         a_din  => out_pixel_value,
 
-        b_clk  => clk_pxl,
+        b_clk  => CLK_VGA,
         b_pos => pixel_on_screen_position,
         b_dout => out_pixel
     );
@@ -198,8 +218,7 @@ begin
 
     I_VGA_CONTROLLER: entity work.vga_controller
     port map (
-        CLK_I    => clk,
-        CLK_O    => clk_pxl,
+        CLK_I    => CLK_VGA,
         
         out_active => VGA_active,
         

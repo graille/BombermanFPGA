@@ -143,8 +143,10 @@ begin
             current_character_position <= next_character_position;
             
             current_pixel_position <= next_pixel_position;
+            current_character_nb <= next_character_nb;
             
             write_pixel_reg <= write_pixel;
+            
         end if;
     end process;
 
@@ -209,8 +211,7 @@ begin
 
                     -- Go to next state
                     next_state <= TEST;
-            end if;
-            if current_state = ROTATE_BLOCK_STATE then
+            elsif current_state = ROTATE_BLOCK_STATE then
                     if current_grid_position = DEFAULT_LAST_GRID_POSITION then
                         next_grid_position <= DEFAULT_GRID_POSITION;
                         next_block_position <= DEFAULT_BLOCK_POSITION;
@@ -219,12 +220,11 @@ begin
                         next_state <= START_STATE;
                     else
                         next_block_position <= DEFAULT_BLOCK_POSITION;
-                        next_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                        next_grid_position <= (5,5);
                         
                         next_state <= WRITE_BLOCK_STATE;
                     end if;
-            end if;
-            if current_state = WRITE_BLOCK_STATE then
+            elsif current_state = WRITE_BLOCK_STATE then
                     write_pixel <= '1';
 
                     next_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
@@ -250,8 +250,7 @@ begin
                             next_block_position.Y <= current_block_position.Y + 1;
                         end if;
                     end if;
-            end if;
-            if current_state = TEST then
+            elsif current_state = TEST then
                     write_pixel <= '1';
                     
                     if current_pixel_position = DEFAULT_LAST_SCREEN_POSITION then

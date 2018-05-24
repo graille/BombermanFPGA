@@ -22,7 +22,6 @@ use work.PROJECT_TYPES_PKG.all;
 entity vga_controller is
     port (
         CLK_I : in  STD_LOGIC;
-        CLK_O : out std_logic;
         VGA_HS_O : out  STD_LOGIC;
         VGA_VS_O : out  STD_LOGIC;
 
@@ -32,13 +31,6 @@ entity vga_controller is
 end vga_controller;
 
 architecture Behavioral of vga_controller is
-    component clk_wiz_0
-    port (
-        CLK_IN1           : in     std_logic;
-        CLK_OUT1          : out    std_logic
-    );
-    end component;
-
     --Moving Box constants
     constant BOX_WIDTH : natural := 8;
     constant BOX_CLK_DIV : natural := 1000000; --MAX=(2^25 - 1)
@@ -72,14 +64,8 @@ architecture Behavioral of vga_controller is
 
     signal update_box : std_logic;
 begin
-    CLK_O <= pxl_clk;
+    pxl_clk <= CLK_I;
     out_active <= active;
-
-    clk_div_inst : clk_wiz_0
-        port map (
-            CLK_IN1 => CLK_I,
-            CLK_OUT1 => pxl_clk
-        );
 
  ------------------------------------------------------
  -------         MOVING BOX LOGIC                ------
