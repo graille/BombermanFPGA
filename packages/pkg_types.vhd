@@ -53,7 +53,11 @@ package PROJECT_TYPES_PKG is
         X : integer range 0 to FRAME_HEIGHT - 1;
         Y : integer range 0 to FRAME_WIDTH - 1;
     end record;
-    constant DEFAULT_SCREEN_POSITION : screen_position_type := (0,0);
+    constant DEFAULT_SCREEN_POSITION : screen_position_type := (0, 0);
+    constant DEFAULT_LAST_SCREEN_POSITION : screen_position_type := (FRAME_HEIGHT - 1, FRAME_WIDTH - 1);
+    
+    subtype pixel_value_type is std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
+    constant DEFAULT_PIXEL_VALUE : pixel_value_type := (others => '1');
 
     -- IO_Signals
     subtype io_signal is std_logic_vector(7 downto 0);

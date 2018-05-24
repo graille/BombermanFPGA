@@ -206,4 +206,5 @@ begin
     out_player_status <= (0, player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
+    out_is_alive <= player_alive;
 end behavioral;

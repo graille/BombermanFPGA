@@ -33,12 +33,10 @@ end vga_controller;
 
 architecture Behavioral of vga_controller is
     component clk_wiz_0
-    port
-     (-- Clock in ports
-      CLK_IN1           : in     std_logic;
-      -- Clock out ports
-      CLK_OUT1          : out    std_logic
-     );
+    port (
+        CLK_IN1           : in     std_logic;
+        CLK_OUT1          : out    std_logic
+    );
     end component;
 
     --Moving Box constants

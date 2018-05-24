@@ -15,7 +15,7 @@ entity GAME_TOP is
         CLK, RST : in std_logic := '0';
 
         -- Switches (to configure seeds for PRNG)
-        SW : in std_logic_vector(NB_SWITCH - 1 downto 0);
+        SW : in std_logic_vector(NB_SWITCH - 1 downto 0) := (others => '0');
 
         -- LEDS
         LED : out std_logic_vector(NB_SWITCH - 1 downto 0);
@@ -51,6 +51,8 @@ architecture behavioral of GAME_TOP is
     signal players_position     : players_positions_type;
     signal players_status       : players_status_type;
     signal players_alive        : std_logic_vector(NB_PLAYERS - 1 downto 0);
+    
+    signal write_pixel : std_logic := '0';
 
     -- Game controller
     signal in_read_block     : block_type;
@@ -162,6 +164,7 @@ begin
 
         out_pixel_value      => out_pixel_value,
         out_pixel_position   => out_pixel_position,
+        out_write_pixel      => write_pixel,
 
         in_players_position     => players_position,
         in_players_status       => players_status,
@@ -171,7 +174,7 @@ begin
     I_PIXEL_RAM: entity work.pixel_ram
     port map (
         a_clk  => clk,
-        a_wr   => '1',
+        a_wr   => write_pixel,
         a_pos => out_pixel_position,
         a_din  => out_pixel_value,
 
