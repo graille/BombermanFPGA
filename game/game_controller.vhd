@@ -248,7 +248,7 @@ begin
         end if;
     end process;
 
-    process(current_state, millisecond)
+    process(current_state, millisecond, RST)
     begin
         if RST = '1' then
             next_grid_position <= DEFAULT_GRID_POSITION;

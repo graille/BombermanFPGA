@@ -38,7 +38,7 @@ begin
                 end if;
             end if;
         end if;
-
-        timer <= millisecond;
     end process;
+    
+    timer <= millisecond;
 end behavioral;
