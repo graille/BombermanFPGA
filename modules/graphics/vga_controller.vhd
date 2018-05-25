@@ -21,7 +21,8 @@ use work.PROJECT_TYPES_PKG.all;
 
 entity vga_controller is
     port (
-        CLK_I : in  STD_LOGIC;
+        pxl_clk : in  STD_LOGIC;
+        
         VGA_HS_O : out  STD_LOGIC;
         VGA_VS_O : out  STD_LOGIC;
 
@@ -44,7 +45,6 @@ architecture Behavioral of vga_controller is
     constant BOX_X_INIT : std_logic_vector(11 downto 0) := x"000";
     constant BOX_Y_INIT : std_logic_vector(11 downto 0) := x"190"; --400
 
-    signal pxl_clk : std_logic;
     signal active : std_logic;
 
     signal h_cntr_reg : std_logic_vector(11 downto 0) := (others =>'0');
@@ -63,8 +63,10 @@ architecture Behavioral of vga_controller is
     signal box_cntr_reg : std_logic_vector(24 downto 0) := (others =>'0');
 
     signal update_box : std_logic;
+    
+
 begin
-    pxl_clk <= CLK_I;
+
     out_active <= active;
 
  ------------------------------------------------------

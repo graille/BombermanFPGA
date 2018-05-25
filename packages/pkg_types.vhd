@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
 
@@ -19,6 +20,7 @@ package PROJECT_TYPES_PKG is
         -- 7..9 = Bombs type 0,1,2
         -- 10-12 : Explosion
         -- from 13 to 31 : Bonus and malus blocks
+    
     subtype block_category_type is natural range 0 to 31;
     subtype state_type is natural range 0 to 2**STATE_PRECISION - 1;
     type block_type is record
@@ -29,7 +31,8 @@ package PROJECT_TYPES_PKG is
         owner : natural range 0 to NB_PLAYERS - 1;                    -- Only used by bombs and explosions to assign points to players
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
-
+    constant DEFAULT_BLOCK : block_type := (0, 0, 0, 0, 0);
+    
     -- Info :
     -- O-------> Y axis
     -- |
@@ -41,6 +44,7 @@ package PROJECT_TYPES_PKG is
         Y : natural range 0 to (2**VECTOR_PRECISION) - 1;
     end record;
     type array_vector is array(natural range <>) of vector;
+    constant DEFAULT_VECTOR_POSITION : vector := (0, 0);
 
     type grid_position is record
         i : natural range 0 to (GRID_ROWS - 1);

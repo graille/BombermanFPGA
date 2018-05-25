@@ -6,6 +6,7 @@ use work.PROJECT_PARAMS_PKG.all;
 use work.PROJECT_TYPES_PKG.all;
 use work.PROJECT_DIRECTION_PKG.all;
 use work.PROJECT_POS_FUNCTIONS_PKG.all;
+use work.PROJECT_BLOCKS_PKG.all;
 
 entity graphic_controller is
     port(
@@ -198,58 +199,57 @@ begin
             
             write_pixel <= '0';
         else
-            write_pixel <= '0';
             if current_state = START_STATE then
-                    -- Variables reinitialisation
-                    next_grid_position <= DEFAULT_GRID_POSITION;
+                -- Variables reinitialisation
+                next_grid_position <= DEFAULT_GRID_POSITION;
 
-                    next_block_position <= DEFAULT_BLOCK_POSITION;
-                    next_character_position <= DEFAULT_CHARACTER_POSITION;
+                next_block_position <= DEFAULT_BLOCK_POSITION;
+                next_character_position <= DEFAULT_CHARACTER_POSITION;
 
-                    next_character_nb <= 0;
-                    write_pixel <= '0';
+                next_character_nb <= 0;
+                write_pixel <= '0';
 
-                    -- Go to next state
-                    next_state <= TEST;
-            elsif current_state = ROTATE_BLOCK_STATE then
-                    if current_grid_position = DEFAULT_LAST_GRID_POSITION then
-                        next_grid_position <= DEFAULT_GRID_POSITION;
-                        next_block_position <= DEFAULT_BLOCK_POSITION;
+                -- Go to next state
+                next_state <= TEST;
+--            elsif current_state = ROTATE_BLOCK_STATE then
+--                    if current_grid_position = DEFAULT_LAST_GRID_POSITION then
+--                        next_grid_position <= DEFAULT_GRID_POSITION;
+--                        next_block_position <= DEFAULT_BLOCK_POSITION;
             
-                        --next_state <= WRITE_CHARACTER_STATE;
-                        next_state <= START_STATE;
-                    else
-                        next_block_position <= DEFAULT_BLOCK_POSITION;
-                        next_grid_position <= (5,5);
+--                        --next_state <= WRITE_CHARACTER_STATE;
+--                        next_state <= START_STATE;
+--                    else
+--                        next_block_position <= DEFAULT_BLOCK_POSITION;
+--                        next_grid_position <= (5,5);
                         
-                        next_state <= WRITE_BLOCK_STATE;
-                    end if;
-            elsif current_state = WRITE_BLOCK_STATE then
-                    write_pixel <= '1';
+--                        next_state <= WRITE_BLOCK_STATE;
+--                    end if;
+--            elsif current_state = WRITE_BLOCK_STATE then
+--                    write_pixel <= '1';
 
-                    next_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
-                    next_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
+--                    next_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
+--                    next_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
 
-                    -- Map sprites ROM entries
-                    block_id <= in_block.category;
-                    block_state <= in_block.state;
-                    block_direction <= in_block.direction;
+--                    -- Map sprites ROM entries
+--                    block_id <= in_block.category;
+--                    block_state <= in_block.state;
+--                    block_direction <= in_block.direction;
 
-                    block_row <= current_block_position.X;
-                    block_col <= current_block_position.Y;
+--                    block_row <= current_block_position.X;
+--                    block_col <= current_block_position.Y;
 
-                    -- Update state
-                    if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
-                        next_state <= ROTATE_BLOCK_STATE;
-                    else
-                        if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
-                            next_block_position.Y <= 0;
-                            next_block_position.X <= current_block_position.X + 1;
-                        else
-                            next_block_position.X <= current_block_position.X;
-                            next_block_position.Y <= current_block_position.Y + 1;
-                        end if;
-                    end if;
+--                    -- Update state
+--                    if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
+--                        next_state <= ROTATE_BLOCK_STATE;
+--                    else
+--                        if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
+--                            next_block_position.Y <= 0;
+--                            next_block_position.X <= current_block_position.X + 1;
+--                        else
+--                            next_block_position.X <= current_block_position.X;
+--                            next_block_position.Y <= current_block_position.Y + 1;
+--                        end if;
+--                    end if;
             elsif current_state = TEST then
                     write_pixel <= '1';
                     
