@@ -30,7 +30,7 @@ package body PROJECT_POS_FUNCTIONS_PKG is
         return grid_position is
         variable result : grid_position := DEFAULT_GRID_POSITION;
     begin
-        if pos = (GRID_ROWS - 1, GRID_COLS - 1) then
+        if pos = DEFAULT_LAST_GRID_POSITION then
             result := (0, 0);
         elsif pos.j = (GRID_COLS - 1) then
             result := (pos.i + 1, 0);

@@ -40,7 +40,7 @@ entity GAME_TOP is
 end GAME_TOP;
 
 architecture behavioral of GAME_TOP is
-    signal CLK : std_logic := '0';
+    signal CLK : std_logic;
 
     -- Signals
     signal current_block : block_type;
@@ -80,7 +80,7 @@ architecture behavioral of GAME_TOP is
     
     -- Keyboard
     signal keyboard_output : std_logic_vector(31 downto 0);
-
+    signal CLK_KEYBOARD : std_logic;
     signal COLOR_R, COLOR_G, COLOR_B: STD_LOGIC_VECTOR (7 downto 0);
 
     -- Component
@@ -100,21 +100,20 @@ architecture behavioral of GAME_TOP is
 
     component clk_wiz_0
     port (
-        --reset : in std_logic;
-        
         CLK_IN1  : in     std_logic;
         CLK_OUT1 : out    std_logic;
-        CLK_OUT2 : out std_logic
+        CLK_OUT2 : out    std_logic;
+        CLK_OUT3 : out    std_logic
     );
     end component;
 begin
     CLK_DIV : clk_wiz_0
     port map (
-        --reset => RST,
-        
         CLK_IN1 => CLK100,
-        CLK_OUT1 => CLK_VGA,
-        CLK_OUT2 => CLK
+        
+        CLK_OUT1 => CLK,
+        CLK_OUT2 => CLK_VGA,
+        CLK_OUT3 => CLK_KEYBOARD
     );
     
     -- I/O

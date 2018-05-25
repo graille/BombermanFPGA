@@ -173,7 +173,6 @@ begin
     -- Control signals controller
     process(
         rst,
-        clk,
         in_block, 
         current_state, 
         
@@ -210,66 +209,62 @@ begin
                 write_pixel <= '0';
 
                 -- Go to next state
-                next_state <= TEST;
---            elsif current_state = ROTATE_BLOCK_STATE then
---                    if current_grid_position = DEFAULT_LAST_GRID_POSITION then
---                        next_grid_position <= DEFAULT_GRID_POSITION;
---                        next_block_position <= DEFAULT_BLOCK_POSITION;
-            
---                        --next_state <= WRITE_CHARACTER_STATE;
---                        next_state <= START_STATE;
---                    else
---                        next_block_position <= DEFAULT_BLOCK_POSITION;
---                        next_grid_position <= (5,5);
-                        
---                        next_state <= WRITE_BLOCK_STATE;
---                    end if;
---            elsif current_state = WRITE_BLOCK_STATE then
---                    write_pixel <= '1';
+                next_state <= WRITE_BLOCK_STATE;
+            end if;
+            if current_state = ROTATE_BLOCK_STATE then
+                write_pixel <= '0';
+                next_grid_position <= ((current_grid_position.i + 1) mod GRID_ROWS, (current_grid_position.j + 1) mod GRID_COLS);
+                next_block_position <= DEFAULT_BLOCK_POSITION;
+                next_state <= WRITE_BLOCK_STATE;
 
---                    next_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
---                    next_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
+            end if;
+            if current_state = WRITE_BLOCK_STATE then
+                write_pixel <= '1';
 
---                    -- Map sprites ROM entries
---                    block_id <= in_block.category;
---                    block_state <= in_block.state;
---                    block_direction <= in_block.direction;
+                next_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
+                next_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
 
---                    block_row <= current_block_position.X;
---                    block_col <= current_block_position.Y;
+                -- Map sprites ROM entries
+                block_id <= in_block.category;
+                block_state <= in_block.state;
+                block_direction <= in_block.direction;
 
---                    -- Update state
---                    if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
---                        next_state <= ROTATE_BLOCK_STATE;
---                    else
---                        if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
---                            next_block_position.Y <= 0;
---                            next_block_position.X <= current_block_position.X + 1;
---                        else
---                            next_block_position.X <= current_block_position.X;
---                            next_block_position.Y <= current_block_position.Y + 1;
---                        end if;
---                    end if;
-            elsif current_state = TEST then
-                    write_pixel <= '1';
-                    
-                    if current_pixel_position = DEFAULT_LAST_SCREEN_POSITION then
-                        next_pixel_position <= DEFAULT_SCREEN_POSITION;
+                block_row <= current_block_position.X;
+                block_col <= current_block_position.Y;
+
+                -- Update state
+                if current_block_position.Y >= BLOCK_GRAPHIC_WIDTH - 1 and current_block_position.X >= BLOCK_GRAPHIC_HEIGHT - 1 then
+                    next_state <= ROTATE_BLOCK_STATE;
+                else
+                    next_state <= current_state;
+                    if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
+                        next_block_position.Y <= 0;
+                        next_block_position.X <= current_block_position.X + 1;
                     else
-                        if current_pixel_position.Y = FRAME_WIDTH - 1 then
-                            next_pixel_position.Y <= 0;
-                            next_pixel_position.X <= current_pixel_position.X + 1;
-                        else
-                            next_pixel_position.X <= current_pixel_position.X;
-                            next_pixel_position.Y <= current_pixel_position.Y + 1;
-                        end if;
+                        next_block_position.X <= current_block_position.X;
+                        next_block_position.Y <= current_block_position.Y + 1;
                     end if;
+                end if;     
+            end if;
+            if current_state = TEST then
+                write_pixel <= '1';
+                
+                if current_pixel_position = DEFAULT_LAST_SCREEN_POSITION then
+                    next_pixel_position <= DEFAULT_SCREEN_POSITION;
+                else
+                    if current_pixel_position.Y = FRAME_WIDTH - 1 then
+                        next_pixel_position.Y <= 0;
+                        next_pixel_position.X <= current_pixel_position.X + 1;
+                    else
+                        next_pixel_position.X <= current_pixel_position.X;
+                        next_pixel_position.Y <= current_pixel_position.Y + 1;
+                    end if;
+                end if;
             end if;
         end if;
     end process;
     
-    out_pixel_position <= current_pixel_position;
-    out_write_pixel <= write_pixel_reg;
-    
-    out_request_pos <= current_grid_position;
+    out_pixel_position <= next_pixel_position;
+    out_write_pixel <= write_pixel;
+    out_request_pos <= next_grid_position;
 end behavioral;
