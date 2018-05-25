@@ -201,7 +201,7 @@ begin
                         block_id <= in_block.category;
                         block_state <= in_block.state;
                         block_direction <= in_block.direction;
-                    
+                        
                         write_pixel <= '0';
                         current_state <= WRITE_BLOCK_STATE;
                     when WRITE_BLOCK_STATE =>
