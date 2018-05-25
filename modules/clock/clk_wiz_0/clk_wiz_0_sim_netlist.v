@@ -3,8 +3,8 @@
 // Tool Version: Vivado v.2017.2 (lin64) Build 1909853 Thu Jun 15 18:39:10 MDT 2017
 // Date        : Fri May 25 11:05:38 2018
 // Host        : k2-123-test running 64-bit Ubuntu 16.04.3 LTS
-// Command     : write_verilog -force -mode funcsim
-//               /home/orcad/BombermanFPGA/modules/clock/clk_wiz_0/clk_wiz_0_sim_netlist.v
+// Command     : write_verilog -force -mode funcsim -rename_top clk_wiz_0 -prefix
+//               clk_wiz_0_ clk_wiz_0_sim_netlist.v
 // Design      : clk_wiz_0
 // Purpose     : This verilog netlist is a functional simulation representation of the design and should not be modified
 //               or synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -35,7 +35,6 @@ module clk_wiz_0
         .clk_out3(clk_out3));
 endmodule
 
-(* ORIG_REF_NAME = "clk_wiz_0_clk_wiz" *) 
 module clk_wiz_0_clk_wiz_0_clk_wiz
    (clk_out1,
     clk_out2,

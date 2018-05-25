@@ -23,7 +23,7 @@ end ressources_sprite_rom;
 
 architecture behavioral of ressources_sprite_rom is
     subtype word_t is std_logic_vector((40 * 5) - 1 downto 0);
-    type memory_t is array(1639 downto 0) of word_t;
+    type memory_t is array(0 to 1639) of word_t;
 
     function init_mem 
         return memory_t is
@@ -1757,7 +1757,7 @@ architecture behavioral of ressources_sprite_rom is
     signal real_row : integer range 0 to 1639 := 0;
     signal out_color_reg : std_logic_vector((40 * 5) - 1 downto 0) := (others => '0');
 begin
-    process(in_sprite_id, in_sprite_row, in_sprite_col)
+    process(in_sprite_id, in_sprite_row, in_sprite_col, in_sprite_state, in_sprite_direction)
     begin
         case in_sprite_id is
             when 1 => real_row <= in_sprite_row;
@@ -1854,10 +1854,12 @@ begin
     end process;
 
     process(clk)
+        variable result : std_logic_vector((40 * 5) - 1 downto 0) := (others => '0');
     begin
         if rising_edge(clk) then
-            out_color_reg <= rom(real_row);
+            result := rom(real_row);
+            out_color <= result(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
         end if;
     end process;
-    out_color <= out_color_reg(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
+    
 end behavioral;

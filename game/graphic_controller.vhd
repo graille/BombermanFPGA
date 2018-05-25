@@ -33,6 +33,7 @@ architecture behavioral of graphic_controller is
         
         -- Write blocks
         ROTATE_BLOCK_STATE,
+        WAITING_BLOCK_STATE,
         WRITE_BLOCK_STATE,
         
         -- Write characters
@@ -44,7 +45,8 @@ architecture behavioral of graphic_controller is
         WRITE_TIME_REMAINING_STATE,
         
         -- Test state
-        TEST
+        TEST,
+        STOP_STATE
     );
 
     type block_position_type is record
@@ -68,11 +70,11 @@ architecture behavioral of graphic_controller is
     constant DEFAULT_LAST_CHARACTER_POSITION : character_position_type := (0, 0);
 
     -- Grid signals
-    signal current_state, next_state : process_state_type := START_STATE;
-    signal current_grid_position, next_grid_position : grid_position := DEFAULT_GRID_POSITION;
+    signal current_state : process_state_type := START_STATE;
+    signal current_grid_position : grid_position := DEFAULT_GRID_POSITION;
 
     -- Blocks sprites signals
-    signal current_block_position, next_block_position : block_position_type := DEFAULT_BLOCK_POSITION;
+    signal current_block_position : block_position_type := DEFAULT_BLOCK_POSITION;
 
     signal block_id : block_category_type := 0;
     signal block_state : state_type := 0;
@@ -84,8 +86,8 @@ architecture behavioral of graphic_controller is
     signal block_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
 
     -- Characters signals
-    signal current_character_position, next_character_position : character_position_type := DEFAULT_CHARACTER_POSITION;
-    signal current_character_nb, next_character_nb : integer range 0 to NB_PLAYERS - 1 := 0;
+    signal current_character_position : character_position_type := DEFAULT_CHARACTER_POSITION;
+    signal current_character_nb : integer range 0 to NB_PLAYERS - 1 := 0;
 
     signal character_id : character_id_type := 0;
     signal character_state : state_type := 0;
@@ -100,8 +102,8 @@ architecture behavioral of graphic_controller is
     constant TRANSPARENT_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '1');
     constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := "01010";
     
-    signal next_pixel_position, current_pixel_position: screen_position_type := DEFAULT_SCREEN_POSITION;
-    signal write_pixel, write_pixel_reg : std_logic := '0';
+    signal current_pixel_position: screen_position_type := DEFAULT_SCREEN_POSITION;
+    signal write_pixel : std_logic := '0';
 begin
     -- This ROM contains all blocks sprites
     RESSOURCES_ROM_INSTANCE:entity work.ressources_sprite_rom
@@ -119,44 +121,26 @@ begin
     );
 
     -- This ROM contains all characters sprites
-    CHARACTERS_ROM_INSTANCE:entity work.characters_sprite_rom
-    port map (
-        clk => clk,
+--    CHARACTERS_ROM_INSTANCE:entity work.characters_sprite_rom
+--    port map (
+--        clk => clk,
 
-        in_sprite_id => character_id,
-        in_sprite_state => character_state,
-        in_sprite_direction => character_direction,
+--        in_sprite_id => character_id,
+--        in_sprite_state => character_state,
+--        in_sprite_direction => character_direction,
 
-        in_sprite_row => character_row,
-        in_sprite_col => character_col,
+--        in_sprite_row => character_row,
+--        in_sprite_col => character_col,
 
-        out_color => character_current_color
-    );
-
-    -- State saver
-    process(clk)
-    begin
-        if rising_edge(clk) then
-            current_grid_position <= next_grid_position;
-            current_state <= next_state;
-
-            current_block_position <= next_block_position;
-            current_character_position <= next_character_position;
-            
-            current_pixel_position <= next_pixel_position;
-            current_character_nb <= next_character_nb;
-            
-            write_pixel_reg <= write_pixel;
-            
-        end if;
-    end process;
+--        out_color => character_current_color
+--    );
 
     -- Out color multiplexer
     process(block_current_color, character_current_color, current_state, current_pixel_position)
     begin
         case current_state is
             when TEST =>
-                out_pixel_value <= std_logic_vector(to_unsigned(current_pixel_position.X mod 32, COLOR_BIT_PRECISION));
+                out_pixel_value <= std_logic_vector(to_unsigned((current_pixel_position.X + current_pixel_position.Y) mod 32, COLOR_BIT_PRECISION));
             when WRITE_BLOCK_STATE | ROTATE_BLOCK_STATE =>
                 if block_current_color /= TRANSPARENT_COLOR then
                     out_pixel_value <= block_current_color;
@@ -171,100 +155,82 @@ begin
     end process;
 
     -- Control signals controller
-    process(
-        rst,
-        in_block, 
-        current_state, 
-        
-        current_block_position,
-        current_grid_position,
-        current_pixel_position,
-        
-        write_pixel_reg)
-
+    process(clk)
         constant VECTOR_HEIGHT_FACTOR : integer := FRAME_HEIGHT / (2**VECTOR_PRECISION);
         constant VECTOR_WIDTH_FACTOR : integer := FRAME_WIDTH / (2**VECTOR_PRECISION);
     begin
-        if rst = '1' then
-            next_state <= START_STATE;
-            next_grid_position <= DEFAULT_GRID_POSITION;
-
-            next_block_position <= DEFAULT_BLOCK_POSITION;
-            next_character_position <= DEFAULT_CHARACTER_POSITION;
-            
-            next_pixel_position <= DEFAULT_SCREEN_POSITION;
-
-            next_character_nb <= 0;
-            
-            write_pixel <= '0';
-        else
-            if current_state = START_STATE then
-                -- Variables reinitialisation
-                next_grid_position <= DEFAULT_GRID_POSITION;
-
-                next_block_position <= DEFAULT_BLOCK_POSITION;
-                next_character_position <= DEFAULT_CHARACTER_POSITION;
-
-                next_character_nb <= 0;
-                write_pixel <= '0';
-
-                -- Go to next state
-                next_state <= WRITE_BLOCK_STATE;
-            end if;
-            if current_state = ROTATE_BLOCK_STATE then
-                write_pixel <= '0';
-                next_grid_position <= ((current_grid_position.i + 1) mod GRID_ROWS, (current_grid_position.j + 1) mod GRID_COLS);
-                next_block_position <= DEFAULT_BLOCK_POSITION;
-                next_state <= WRITE_BLOCK_STATE;
-
-            end if;
-            if current_state = WRITE_BLOCK_STATE then
-                write_pixel <= '1';
-
-                next_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
-                next_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
-
-                -- Map sprites ROM entries
-                block_id <= in_block.category;
-                block_state <= in_block.state;
-                block_direction <= in_block.direction;
-
-                block_row <= current_block_position.X;
-                block_col <= current_block_position.Y;
-
-                -- Update state
-                if current_block_position.Y >= BLOCK_GRAPHIC_WIDTH - 1 and current_block_position.X >= BLOCK_GRAPHIC_HEIGHT - 1 then
-                    next_state <= ROTATE_BLOCK_STATE;
-                else
-                    next_state <= current_state;
-                    if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
-                        next_block_position.Y <= 0;
-                        next_block_position.X <= current_block_position.X + 1;
-                    else
-                        next_block_position.X <= current_block_position.X;
-                        next_block_position.Y <= current_block_position.Y + 1;
-                    end if;
-                end if;     
-            end if;
-            if current_state = TEST then
-                write_pixel <= '1';
+        if rising_edge(clk) then
+            if rst = '1' then
+                current_state <= START_STATE;
+                current_grid_position <= DEFAULT_GRID_POSITION;
+    
+                current_block_position <= DEFAULT_BLOCK_POSITION;
+                current_character_position <= DEFAULT_CHARACTER_POSITION;
                 
-                if current_pixel_position = DEFAULT_LAST_SCREEN_POSITION then
-                    next_pixel_position <= DEFAULT_SCREEN_POSITION;
-                else
-                    if current_pixel_position.Y = FRAME_WIDTH - 1 then
-                        next_pixel_position.Y <= 0;
-                        next_pixel_position.X <= current_pixel_position.X + 1;
-                    else
-                        next_pixel_position.X <= current_pixel_position.X;
-                        next_pixel_position.Y <= current_pixel_position.Y + 1;
-                    end if;
-                end if;
+                current_pixel_position <= DEFAULT_SCREEN_POSITION;
+    
+                current_character_nb <= 0;
+                
+                write_pixel <= '0';
+            else
+                case current_state is
+                    when START_STATE =>
+                        -- Variables reinitialisation
+                        current_grid_position <= DEFAULT_GRID_POSITION;
+        
+                        current_block_position <= DEFAULT_BLOCK_POSITION;
+                        current_character_position <= DEFAULT_CHARACTER_POSITION;
+        
+                        current_character_nb <= 0;
+                        write_pixel <= '0';
+        
+                        -- Go to next state
+                        current_state <= WAITING_BLOCK_STATE;
+                    when ROTATE_BLOCK_STATE =>
+                        current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                        
+                        current_block_position.X <= 0;
+                        current_block_position.Y <= 0;
+                        
+                        if current_grid_position = DEFAULT_LAST_GRID_POSITION then
+                            current_state <= STOP_STATE;
+                        else
+                            current_state <= WAITING_BLOCK_STATE;
+                        end if;
+                    when WAITING_BLOCK_STATE =>
+                        block_id <= in_block.category;
+                        block_state <= in_block.state;
+                        block_direction <= in_block.direction;
+                    
+                        write_pixel <= '0';
+                        current_state <= WRITE_BLOCK_STATE;
+                    when WRITE_BLOCK_STATE =>
+                        write_pixel <= '1';
+                        current_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
+                        current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
+        
+                        -- Map sprites ROM entries
+                        block_row <= current_block_position.X;
+                        block_col <= current_block_position.Y;
+        
+                        -- Update state
+                        if current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 and current_block_position.X = BLOCK_GRAPHIC_HEIGHT - 1 then
+                            write_pixel <= '0';
+                            current_state <= ROTATE_BLOCK_STATE;
+                        elsif current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
+                            current_block_position.Y <= 0;
+                            current_block_position.X <= current_block_position.X + 1;
+                        else
+                            current_block_position.X <= current_block_position.X;
+                            current_block_position.Y <= current_block_position.Y + 1;
+                        end if;
+                    when others => null;
+                end case;
             end if;
         end if;
     end process;
     
-    out_pixel_position <= next_pixel_position;
+    out_pixel_position <= current_pixel_position;
     out_write_pixel <= write_pixel;
-    out_request_pos <= next_grid_position;
+    out_request_pos <= current_grid_position;
 end behavioral;

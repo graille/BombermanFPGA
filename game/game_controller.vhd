@@ -276,12 +276,12 @@ begin
                     next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE;
                 when STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE =>
                     out_write <= '0';
-                    if current_grid_position /= DEFAULT_LAST_GRID_POSITION then
-                        next_grid_position <= INCR_POSITION_BORDER(current_grid_position);
-                        next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
-                    else
+                    if current_grid_position = DEFAULT_LAST_GRID_POSITION then
                         next_grid_position <= DEFAULT_GRID_POSITION;
                         next_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
+                    else
+                        next_grid_position <= INCR_POSITION_BORDER(current_grid_position);
+                        next_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
                     end if;
 
                 when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>

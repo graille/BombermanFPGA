@@ -40,7 +40,7 @@ entity GAME_TOP is
 end GAME_TOP;
 
 architecture behavioral of GAME_TOP is
-    signal CLK : std_logic;
+    signal CLK : std_logic := '0';
 
     -- Signals
     signal current_block : block_type;
