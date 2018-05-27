@@ -245,7 +245,7 @@ begin
         end if;
     end process;
 
-    process(current_state, millisecond, RST)
+    process(clk)
     begin
         if rising_edge(CLK) then
             if RST = '1' then
