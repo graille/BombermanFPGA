@@ -51,10 +51,11 @@ architecture behavioral of GAME_TOP is
     signal gc_out_pixel_value      : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '0');
     signal gc_out_pixel_position   : screen_position_type := DEFAULT_SCREEN_POSITION;
 
-    signal gc_in_players_position     : players_positions_type := (others => DEFAULT_VECTOR_POSITION);
-    signal gc_in_players_status       : players_status_type := (others => DEFAULT_PLAYER_STATUS);
-    signal gc_in_players_alive        : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
-    
+    signal gc_in_player_position     : vector := DEFAULT_VECTOR_POSITION;
+    signal gc_in_player_status       : player_status_type := DEFAULT_PLAYER_STATUS;
+    signal gc_in_player_alive        : std_logic := '0';
+    signal gc_out_request_player      : integer range 0 to NB_PLAYERS - 1 := 0;
+
     signal gc_out_write_pixel : std_logic := '0';
 
     -- Game controller
@@ -77,7 +78,7 @@ architecture behavioral of GAME_TOP is
     signal CLK_VGA    : std_logic;
     signal pixel_on_screen_position : screen_position_type;
     signal VGA_active : std_logic := '0';
-    
+
     -- Keyboard
     signal keyboard_output : std_logic_vector(31 downto 0);
     signal CLK_KEYBOARD : std_logic;
@@ -110,12 +111,12 @@ begin
     CLK_DIV : clk_wiz_0
     port map (
         CLK_IN1 => CLK100,
-        
+
         CLK_OUT1 => CLK,
         CLK_OUT2 => CLK_VGA,
         CLK_OUT3 => CLK_KEYBOARD
     );
-    
+
     -- I/O
     LED <= SW;
 
@@ -154,9 +155,10 @@ begin
         out_block         => gu_out_block,
         out_write         => gu_out_write,
 
-        out_players_position     => gc_in_players_position,
-        out_players_status       => gc_in_players_status,
-        out_players_alive        => gc_in_players_alive
+        in_requested_player     => gc_out_request_player,
+        out_player_position     => gc_in_player_position,
+        out_player_status       => gc_in_player_status,
+        out_player_alive        => gc_in_player_alive
     );
 
     I_BLOCK_RAM: entity work.block_ram
@@ -171,7 +173,7 @@ begin
         p_b    => gc_out_request_pos,
         q_b    => gc_in_block
     );
-    
+
     -- Graphic controller
     I_GRAPHIC_CONTROLLER: entity work.graphic_controller
     port map (
@@ -185,9 +187,10 @@ begin
         out_pixel_position   => gc_out_pixel_position,
         out_write_pixel      => gc_out_write_pixel,
 
-        in_players_position     => gc_in_players_position,
-        in_players_status       => gc_in_players_status,
-        in_players_alive        => gc_in_players_alive
+        out_request_player     => gc_out_request_player,
+        in_player_position     => gc_in_player_position,
+        in_player_status       => gc_in_player_status,
+        in_player_alive        => gc_in_player_alive
     );
 
     I_PIXEL_RAM: entity work.pixel_ram
@@ -218,9 +221,9 @@ begin
     I_VGA_CONTROLLER: entity work.vga_controller
     port map (
         pxl_clk    => CLK_VGA,
-        
+
         out_active => VGA_active,
-        
+
         VGA_HS_O => VGA_HS_O,
         VGA_VS_O => VGA_VS_O,
 

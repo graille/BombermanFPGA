@@ -21,7 +21,7 @@ architecture behavioral of simple_prng_lfsr is
     signal feedback   : std_logic;
 begin
     -- Option for LFSR size 4
-    feedback <= not(lfsr(3) xor lfsr(2));
+    feedback <= not(lfsr(3) xor lfsr(DATA_LENGTH - 2));
 
     process (clk)
     begin

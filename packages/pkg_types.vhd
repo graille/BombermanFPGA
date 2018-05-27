@@ -20,7 +20,7 @@ package PROJECT_TYPES_PKG is
         -- 7..9 = Bombs type 0,1,2
         -- 10-12 : Explosion
         -- from 13 to 31 : Bonus and malus blocks
-    
+
     subtype block_category_type is natural range 0 to 31;
     subtype state_type is natural range 0 to 2**STATE_PRECISION - 1;
     type block_type is record
@@ -32,7 +32,7 @@ package PROJECT_TYPES_PKG is
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
     constant DEFAULT_BLOCK : block_type := (0, 0, 0, 0, 0);
-    
+
     -- Info :
     -- O-------> Y axis
     -- |
@@ -59,7 +59,7 @@ package PROJECT_TYPES_PKG is
     end record;
     constant DEFAULT_SCREEN_POSITION : screen_position_type := (0, 0);
     constant DEFAULT_LAST_SCREEN_POSITION : screen_position_type := (FRAME_HEIGHT - 1, FRAME_WIDTH - 1);
-    
+
     subtype pixel_value_type is std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
     constant DEFAULT_PIXEL_VALUE : pixel_value_type := (others => '1');
 
@@ -71,7 +71,7 @@ package PROJECT_TYPES_PKG is
     subtype dol_type is std_logic_vector(3 downto 0);
 
     -- Players dedicated types
-    subtype character_id_type is integer range 0 to NB_CHARACTER_DESIGN - 1;
+    subtype character_id_type is integer range 0 to NB_MAX_CHARACTER_DESIGN - 1;
     type player_status_type is record
         id              : character_id_type;
 	    state		    : state_type;

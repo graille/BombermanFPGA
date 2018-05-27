@@ -1,24 +1,30 @@
+--------------------------------------------------------------------------------
+-- Author : Thibault PIANA
+-- This file contains the entire configuration of the project.
+-- Please do not modify this file if you do not know what you are doing.
+--------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
 package PROJECT_PARAMS_PKG is
+    ---------------------------------------------------------------------------
+    -- General parameters
+    ---------------------------------------------------------------------------
     constant NB_PLAYERS : integer := 4;
-    constant GRID_ROWS : integer := 15;
+    constant GRID_ROWS : integer := 14;
     constant GRID_COLS : integer := 20;
 
-    constant VECTOR_PRECISION : integer := 16;
-    constant STATE_PRECISION : integer := 3;
-    constant PIXEL_PRECISION : integer := 4;
-
-    constant PRNG_PRECISION : integer := 32;
-
-    constant MAX_PLAYER_POWER : integer := 15;
+    constant VECTOR_PRECISION : integer := 12;
+    constant STATE_PRECISION : integer := 2;
+    constant PRNG_PRECISION : integer := 16;
+    constant MAX_PLAYER_POWER : integer := 16;
 
     constant COLOR_BIT_PRECISION : integer := 5;
 
-    constant NB_CHARACTER_DESIGN : integer := 7;
+    constant NB_MAX_CHARACTER_DESIGN : integer := 7;
 
     -- O-----> Y axis
     -- |
@@ -33,7 +39,23 @@ package PROJECT_PARAMS_PKG is
     constant MILLISECOND_COUNTER_PRECISION : integer := integer(ceil(log2(real(NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 60 * 1000)))); -- Max 31 (18 = 4.3 minutes)
     constant CLK_COUNTER_PRECISION : integer := 31; -- Max 31
 
+    ---------------------------------------------------------------------------
+    -- Controls parameters
+    ---------------------------------------------------------------------------
+    type commands_array_type is array(NB_PLAYERS - 1 downto 0) of std_logic_vector(7 downto 0);
+
+    constant CONTROL_SET_FORWARD : commands_array_type := (x"1D", x"43", x"6C", x"75");
+    constant CONTROL_SET_LEFT : commands_array_type := (x"1C", x"36", x"71", x"66");
+    constant CONTROL_SET_BACK : commands_array_type := (x"1B", x"42", x"69", x"72");
+    constant CONTROL_SET_RIGHT : commands_array_type := (x"23", x"46", x"7A", x"74");
+
+    ---------------------------------------------------------------------------
     -- Graphics parameters
+    ---------------------------------------------------------------------------
+    -- Colors
+    constant TRANSPARENT_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '1');
+    constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := "01010";
+
     -- More details and values : http://web.mit.edu/6.111/www/s2004/NEWKIT/vga.shtml
     constant FRAME_WIDTH : natural := 800;
     constant FRAME_HEIGHT : natural := 600;
@@ -48,10 +70,11 @@ package PROJECT_PARAMS_PKG is
     --
     constant H_POL : std_logic := '1';
     constant V_POL : std_logic := '1';
-
+    
+    -- Graphic elements
     constant BLOCK_GRAPHIC_WIDTH : integer := FRAME_WIDTH / GRID_COLS;
-    constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / GRID_ROWS;
+    constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / (GRID_ROWS + 1);
 
-    constant CHARACTER_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
-    constant CHARACTER_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
+    constant CHARACTER_GRAPHIC_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
+    constant CHARACTER_GRAPHIC_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
 end package;

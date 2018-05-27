@@ -170,11 +170,14 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l += [TAB + "constant rom : memory_t := init_mem;"]
     l += [TAB + 'signal real_row : integer range 0 to ' + str(total_rows - 1) + ' := 0;']
+    l += [TAB + "signal out_color_reg : std_logic_vector(" + str(max_w*bits_precision - 1) + " downto 0) := (others => '0');"]
 
     l += ["begin"]
 
     l += [TAB + "process(in_sprite_id, in_sprite_row, in_sprite_col, in_sprite_state, in_sprite_direction)"]
     l += [TAB + "begin"]
+
+    l+= [TAB * 2 + "real_row <= 0;"]
 
     cumulative_rows = 0
     l += [TAB * 2 + "case in_sprite_id is"]
@@ -236,15 +239,15 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
     l += [""]
 
     l += [TAB + "process(clk)"]
-    l += [TAB * 2 + "variable result : std_logic_vector(" + str(max_w*bits_precision - 1) + " downto 0) := (others => '0');"]
     l += [TAB + "begin"]
 
     l += [TAB * 2 + "if rising_edge(clk) then"]
-    l += [TAB * 3 + "result := rom(real_row);"]
-    l += [TAB * 3 + "out_color <= result(((in_sprite_col + 1) * " + str(bits_precision) + ") - 1 downto (in_sprite_col * " + str(bits_precision) + "));"]
+    l += [TAB * 3 + "out_color_reg <= rom(real_row);"]
     l += [TAB * 2 + "end if;"]
 
     l += [TAB + "end process;"]
+
+    l+= [TAB + "out_color <= out_color_reg(((in_sprite_col + 1) * " + str(bits_precision) + ") - 1 downto (in_sprite_col * " + str(bits_precision) + "));"]
 
     l += ["end behavioral;"]
 

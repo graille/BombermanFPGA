@@ -28,9 +28,10 @@ entity game_controller is
         out_block : out block_type;
         out_write : out std_logic;
 
-        out_players_position: out players_positions_type;
-        out_players_status: out players_status_type;
-        out_players_alive: out std_logic_vector(NB_PLAYERS - 1 downto 0);
+        in_requested_player : in integer range 0 to NB_PLAYERS - 1;
+        out_player_position: out vector;
+        out_player_status: out player_status_type;
+        out_player_alive: out std_logic;
 
         out_time_remaining : out millisecond_count := 0
     );
@@ -129,12 +130,16 @@ architecture behavioral of game_controller is
     signal current_grid_position : grid_position := DEFAULT_GRID_POSITION;
     signal death_mode_activated : std_logic := '0';
 begin
-    out_players_position <= players_position;
-    out_players_status <= players_status;
-    out_players_alive <= players_alive;
+    -- Players informations multiplexer (Combinatorial module)
+    process(in_requested_player, players_position, players_status, players_alive)
+    begin
+        out_player_position <= players_position(in_requested_player);
+        out_player_status <= players_status(in_requested_player);
+        out_player_alive <= players_alive(in_requested_player);
+    end process;
 
+    -- Grid position updater
     out_grid_position <= current_grid_position;
-
 
     real_rst_prng <= RST or rst_prng;
     PRNG_GENERATOR:entity work.simple_prng_lfsr
@@ -169,7 +174,7 @@ begin
         -- Instantiate players
         I_PLAYER:entity work.player
             generic map (
-                CONTROL_SET => k
+                K => k
             )
             port map(
                 clk => CLK,
@@ -251,9 +256,9 @@ begin
                     when STATE_START =>
                         out_write <= '0';
                         out_block <= (EMPTY_BLOCK, 0, 0, millisecond, 0);
-    
+
                         death_mode_activated <= '0';
-    
+
                         current_grid_position <= DEFAULT_GRID_POSITION;
                         current_state <= STATE_MENU_LOADING;
                     when STATE_MENU_LOADING =>
@@ -265,39 +270,20 @@ begin
                         -- Place block
                         out_block <= (UNBREAKABLE_BLOCK_1, 0, 0, millisecond, 0);
                         out_write <= '1';
-    
+
                         current_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE;
                     when STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE =>
                         out_write <= '0';
                         if current_grid_position = DEFAULT_LAST_GRID_POSITION then
                             current_grid_position <= DEFAULT_GRID_POSITION;
-                            current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
+                            current_state <= STATE_MAP_BUILD_BREAKABLE;
                         else
                             current_grid_position <= INCR_POSITION_BORDER(current_grid_position);
                             current_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
                         end if;
-    
-                    when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>
-                        if current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1 and (current_grid_position.i + 1) mod 2 = 1 then
-                            if current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1 and (current_grid_position.j + 1) mod 2 = 1 then
-                                out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0);
-                                out_write <= '1';
-                            end if;
-                        end if;
-    
-                        current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE;
-                    when STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE =>
-                        out_write <= '0';
-                        if current_grid_position /= DEFAULT_LAST_GRID_POSITION then
-                            current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
-                            current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
-                        else
-                            current_grid_position <= DEFAULT_GRID_POSITION;
-                            current_state <= STATE_MAP_BUILD_BREAKABLE;
-                        end if;
-    
+
                     when STATE_MAP_BUILD_BREAKABLE =>
-                        if prng_percent > 30 
+                        if prng_percent > 30
                             and in_read_block.category /= UNBREAKABLE_BLOCK_1
                             and in_read_block.category /= UNBREAKABLE_BLOCK_2
                         then
@@ -306,7 +292,7 @@ begin
                         else
                             out_write <= '0';
                         end if;
-    
+
                         current_state <= STATE_MAP_BUILD_BREAKABLE_ROTATE;
                     when STATE_MAP_BUILD_BREAKABLE_ROTATE =>
                         out_write <= '0';
@@ -315,8 +301,28 @@ begin
                             current_state <= STATE_MAP_BUILD_BREAKABLE;
                         else
                             current_grid_position <= DEFAULT_GRID_POSITION;
+                            current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
+                        end if;
+
+                    when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>
+                        if current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1 and (current_grid_position.i + 1) mod 2 = 1 then
+                            if current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1 and (current_grid_position.j + 1) mod 2 = 1 then
+                                out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0);
+                                out_write <= '1';
+                            end if;
+                        end if;
+
+                        current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE;
+                    when STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE =>
+                        out_write <= '0';
+                        if current_grid_position /= DEFAULT_LAST_GRID_POSITION then
+                            current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                            current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE;
+                        else
+                            current_grid_position <= DEFAULT_GRID_POSITION;
                             current_state <= STATE_GAME;
                         end if;
+
                     ----------------------------------------------------------------
                     when STATE_GAME =>
                         if NB_PLAYERS_ALIVE(players_alive) <= 1 then
@@ -330,7 +336,7 @@ begin
                         else
                             out_time_remaining <= (NORMAL_MODE_DURATION + DEATH_MODE_DURATION) - millisecond;
                         end if;
-    
+
                         current_state <= STATE_CHECK_DEATH_MODE;
                     when STATE_CHECK_DEATH_MODE =>
                         if millisecond > NORMAL_MODE_DURATION then
@@ -342,7 +348,7 @@ begin
                     ----------------------------------------------------------------
                     when STATE_GAME_OVER =>
                         out_time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 - millisecond;
-    
+
                         if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 then
                             current_state <= STATE_START;
                         end if;

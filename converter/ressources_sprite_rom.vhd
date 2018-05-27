@@ -22,13 +22,55 @@ entity ressources_sprite_rom is
 end ressources_sprite_rom;
 
 architecture behavioral of ressources_sprite_rom is
-    subtype word_t is std_logic_vector((40 * 5) - 1 downto 0);
-    type memory_t is array(0 to 1639) of word_t;
+    subtype word_t is std_logic_vector(199 downto 0);
+    type memory_t is array(1679 downto 0) of word_t;
 
     function init_mem 
         return memory_t is
         begin
             return (
+                -- 0_empty
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                (x"ffffffffffffffffffffffffffffffffffffffffffffffffff"),
+
                 -- 1_unbreakable
                 (x"ef5ef784210842108421084210842108421084210842318def"),
                 (x"ef5ef784210842108421084210842108421084210842318def"),
@@ -1754,52 +1796,54 @@ architecture behavioral of ressources_sprite_rom is
     end init_mem;
 
     constant rom : memory_t := init_mem;
-    signal real_row : integer range 0 to 1639 := 0;
-    signal out_color_reg : std_logic_vector((40 * 5) - 1 downto 0) := (others => '0');
+    signal real_row : integer range 0 to 1679 := 0;
+    signal out_color_reg : std_logic_vector(199 downto 0) := (others => '0');
 begin
     process(in_sprite_id, in_sprite_row, in_sprite_col, in_sprite_state, in_sprite_direction)
     begin
+        real_row <= 0;
         case in_sprite_id is
-            when 1 => real_row <= in_sprite_row;
-            when 2 => real_row <= 40 + in_sprite_row;
-            when 3 => real_row <= 80 + in_sprite_row;
+            when 0 => real_row <= in_sprite_row;
+            when 1 => real_row <= 40 + in_sprite_row;
+            when 2 => real_row <= 80 + in_sprite_row;
+            when 3 => real_row <= 120 + in_sprite_row;
             when 4 =>
                 case in_sprite_state is
-                    when 0 => real_row <= 120 + in_sprite_row;
+                    when 0 => real_row <= 160 + in_sprite_row;
                     when others => null;
                 end case;
             when 5 =>
                 case in_sprite_state is
-                    when 0 => real_row <= 160 + in_sprite_row;
-                    when 1 => real_row <= 200 + in_sprite_row;
-                    when 2 => real_row <= 240 + in_sprite_row;
-                    when 3 => real_row <= 280 + in_sprite_row;
+                    when 0 => real_row <= 200 + in_sprite_row;
+                    when 1 => real_row <= 240 + in_sprite_row;
+                    when 2 => real_row <= 280 + in_sprite_row;
+                    when 3 => real_row <= 320 + in_sprite_row;
                     when others => null;
                 end case;
             when 6 =>
                 case in_sprite_state is
                     when 0 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 320 + in_sprite_row;
-                            when D_LEFT => real_row <= 360 + in_sprite_row;
+                            when D_UP => real_row <= 360 + in_sprite_row;
+                            when D_LEFT => real_row <= 400 + in_sprite_row;
                             when others => null;
                         end case;
                     when 1 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 400 + in_sprite_row;
-                            when D_LEFT => real_row <= 440 + in_sprite_row;
+                            when D_UP => real_row <= 440 + in_sprite_row;
+                            when D_LEFT => real_row <= 480 + in_sprite_row;
                             when others => null;
                         end case;
                     when 2 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 480 + in_sprite_row;
-                            when D_LEFT => real_row <= 520 + in_sprite_row;
+                            when D_UP => real_row <= 520 + in_sprite_row;
+                            when D_LEFT => real_row <= 560 + in_sprite_row;
                             when others => null;
                         end case;
                     when 3 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 560 + in_sprite_row;
-                            when D_LEFT => real_row <= 600 + in_sprite_row;
+                            when D_UP => real_row <= 600 + in_sprite_row;
+                            when D_LEFT => real_row <= 640 + in_sprite_row;
                             when others => null;
                         end case;
                     when others => null;
@@ -1808,58 +1852,56 @@ begin
                 case in_sprite_state is
                     when 0 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 640 + in_sprite_row;
-                            when D_LEFT => real_row <= 680 + in_sprite_row;
-                            when D_DOWN => real_row <= 720 + in_sprite_row;
-                            when D_RIGHT => real_row <= 760 + in_sprite_row;
+                            when D_UP => real_row <= 680 + in_sprite_row;
+                            when D_LEFT => real_row <= 720 + in_sprite_row;
+                            when D_DOWN => real_row <= 760 + in_sprite_row;
+                            when D_RIGHT => real_row <= 800 + in_sprite_row;
                             when others => null;
                         end case;
                     when 1 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 800 + in_sprite_row;
-                            when D_LEFT => real_row <= 840 + in_sprite_row;
-                            when D_DOWN => real_row <= 880 + in_sprite_row;
-                            when D_RIGHT => real_row <= 920 + in_sprite_row;
+                            when D_UP => real_row <= 840 + in_sprite_row;
+                            when D_LEFT => real_row <= 880 + in_sprite_row;
+                            when D_DOWN => real_row <= 920 + in_sprite_row;
+                            when D_RIGHT => real_row <= 960 + in_sprite_row;
                             when others => null;
                         end case;
                     when 2 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 960 + in_sprite_row;
-                            when D_LEFT => real_row <= 1000 + in_sprite_row;
-                            when D_DOWN => real_row <= 1040 + in_sprite_row;
-                            when D_RIGHT => real_row <= 1080 + in_sprite_row;
+                            when D_UP => real_row <= 1000 + in_sprite_row;
+                            when D_LEFT => real_row <= 1040 + in_sprite_row;
+                            when D_DOWN => real_row <= 1080 + in_sprite_row;
+                            when D_RIGHT => real_row <= 1120 + in_sprite_row;
                             when others => null;
                         end case;
                     when 3 =>
                         case in_sprite_direction is
-                            when D_UP => real_row <= 1120 + in_sprite_row;
-                            when D_LEFT => real_row <= 1160 + in_sprite_row;
-                            when D_DOWN => real_row <= 1200 + in_sprite_row;
-                            when D_RIGHT => real_row <= 1240 + in_sprite_row;
+                            when D_UP => real_row <= 1160 + in_sprite_row;
+                            when D_LEFT => real_row <= 1200 + in_sprite_row;
+                            when D_DOWN => real_row <= 1240 + in_sprite_row;
+                            when D_RIGHT => real_row <= 1280 + in_sprite_row;
                             when others => null;
                         end case;
                     when others => null;
                 end case;
-            when 8 => real_row <= 1280 + in_sprite_row;
-            when 9 => real_row <= 1320 + in_sprite_row;
-            when 10 => real_row <= 1360 + in_sprite_row;
-            when 11 => real_row <= 1400 + in_sprite_row;
-            when 12 => real_row <= 1440 + in_sprite_row;
-            when 13 => real_row <= 1480 + in_sprite_row;
-            when 14 => real_row <= 1520 + in_sprite_row;
-            when 15 => real_row <= 1560 + in_sprite_row;
-            when 16 => real_row <= 1600 + in_sprite_row;
+            when 8 => real_row <= 1320 + in_sprite_row;
+            when 9 => real_row <= 1360 + in_sprite_row;
+            when 10 => real_row <= 1400 + in_sprite_row;
+            when 11 => real_row <= 1440 + in_sprite_row;
+            when 12 => real_row <= 1480 + in_sprite_row;
+            when 13 => real_row <= 1520 + in_sprite_row;
+            when 14 => real_row <= 1560 + in_sprite_row;
+            when 15 => real_row <= 1600 + in_sprite_row;
+            when 16 => real_row <= 1640 + in_sprite_row;
             when others => null;
         end case;
     end process;
 
     process(clk)
-        variable result : std_logic_vector((40 * 5) - 1 downto 0) := (others => '0');
     begin
         if rising_edge(clk) then
-            result := rom(real_row);
-            out_color <= result(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
+            out_color_reg <= rom(real_row);
         end if;
     end process;
-    
+    out_color <= out_color_reg(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
 end behavioral;

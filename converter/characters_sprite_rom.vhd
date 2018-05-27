@@ -22,7 +22,7 @@ entity characters_sprite_rom is
 end characters_sprite_rom;
 
 architecture behavioral of characters_sprite_rom is
-    subtype word_t is std_logic_vector((40 * 5) - 1 downto 0);
+    subtype word_t is std_logic_vector(199 downto 0);
     type memory_t is array(3359 downto 0) of word_t;
 
     function init_mem 
@@ -3561,10 +3561,11 @@ architecture behavioral of characters_sprite_rom is
 
     constant rom : memory_t := init_mem;
     signal real_row : integer range 0 to 3359 := 0;
-    signal out_color_reg : std_logic_vector((40 * 5) - 1 downto 0) := (others => '0');
+    signal out_color_reg : std_logic_vector(199 downto 0) := (others => '0');
 begin
-    process(in_sprite_id, in_sprite_row, in_sprite_col)
+    process(in_sprite_id, in_sprite_row, in_sprite_col, in_sprite_state, in_sprite_direction)
     begin
+        real_row <= 0;
         case in_sprite_id is
             when 0 =>
                 case in_sprite_state is

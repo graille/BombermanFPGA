@@ -23,18 +23,26 @@ begin
     begin
         if (t_pos.x + t_dim.x) > o_pos.x then
             collisions(D_UP) <= '1';
+        else
+            collisions(D_UP) <= '0';
         end if;
 
         if (t_pos.y + t_dim.y) > o_pos.y then
             collisions(D_RIGHT) <= '1';
+        else
+            collisions(D_RIGHT) <= '0';
         end if;
 
         if (o_pos.x + o_dim.x) > t_pos.x then
             collisions(D_DOWN) <= '1';
+        else
+            collisions(D_DOWN) <= '0';
         end if;
 
         if (o_pos.y + o_dim.y) > t_pos.y then
             collisions(D_LEFT) <= '1';
+        else
+            collisions(D_LEFT) <= '0';
         end if;
     end process;
 

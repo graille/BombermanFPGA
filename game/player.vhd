@@ -8,18 +8,18 @@ use work.PROJECT_DIRECTION_PKG.all;
 use work.PROJECT_BLOCKS_PKG.all;
 
 entity player is
-    generic(
-        CONTROL_SET : integer := 0
+    generic (
+        K : integer := 0
     );
     port(
         clk, rst : in std_logic;
         in_millisecond : in millisecond_count;
         in_io : in io_signal;
         in_dol : in dol_type;
-        
+
         in_next_block : in block_type;
         in_next_block_process : in std_logic;
-        
+
         out_position : out vector;
         out_grid_position : out grid_position;
         out_is_alive : out std_logic := '1';
@@ -56,15 +56,15 @@ architecture behavioral of player is
     -- Malus
     signal player_inversed_commands : std_logic := '0';
 
-    signal player_state : state_type;
-    signal player_direction : direction_type;
+    signal player_id : character_id_type := K;
+    signal player_state : state_type := 0;
+    signal player_direction : direction_type := D_DOWN;
 
     -- Commands
-    -- TODO
-    constant CONTROL_FORWARD : io_signal := x"ff";
-    constant CONTROL_BACK : io_signal := x"fe";
-    constant CONTROL_LEFT : io_signal := x"fb";
-    constant CONTROL_RIGHT : io_signal := x"fa";
+    constant CONTROL_FORWARD : io_signal := CONTROL_SET_FORWARD(K);
+    constant CONTROL_BACK : io_signal := CONTROL_SET_BACK(K);
+    constant CONTROL_LEFT : io_signal := CONTROL_SET_LEFT(K);
+    constant CONTROL_RIGHT : io_signal := CONTROL_SET_RIGHT(K);
 
     constant CONTROL_BOMB : io_signal := x"f1";
 begin
@@ -110,7 +110,7 @@ begin
                             if player_lives = 1 then
                                 player_alive <= '0';
                             end if;
-    
+
                             player_lives <= player_lives - 1;
                         when BONUS_SPEED_BLOCK => -- Speed Bonus
                             if player_speed < 2**12 - 1 then
@@ -157,11 +157,21 @@ begin
 
     process(clk)
         variable real_speed : integer range -2**13 to 2**13 - 1;
+        variable grid_reset_position : grid_position := (1, 1);
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                player_position <= PLAYER_INITIAL_POSITION;
+                case K is
+                    when 0 => grid_reset_position := (1, 1);
+                    when 1 => grid_reset_position := (1, GRID_COLS - 2);
+                    when 2 => grid_reset_position := (GRID_ROWS - 2, 1);
+                    when 3 => grid_reset_position := (GRID_ROWS - 2, GRID_COLS - 2);
+                    when others => grid_reset_position := (2, 2);
+                end case;
+                        
+                player_position <= (grid_reset_position.i * 2**VECTOR_PRECISION / GRID_ROWS, grid_reset_position.j * 2**VECTOR_PRECISION / GRID_COLS);
                 player_nb_bombs <= 0;
+                player_id <= (player_id + 1) mod 7;
             else
                 out_action <= EMPTY_PLAYER_ACTION;
 
@@ -203,7 +213,7 @@ begin
         end if;
     end process;
 
-    out_player_status <= (0, player_state, player_direction);
+    out_player_status <= (player_id, player_state, player_direction);
     out_power <= player_power;
     out_position <= player_position;
     out_is_alive <= player_alive;

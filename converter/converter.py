@@ -21,7 +21,7 @@ output_width = 40
 output_mode = Mode.VHDL  # Mode.IMAGE / Mode.VHDL
 
 output_transparent_color = "0D543D"
-input_transparent_color = ["99D8E8", "253F90", "3B3320", "157E1F", "8689D4"]
+input_transparent_color = ["99D8E8", "253F90", "3B3320", "157E1F", "8689D4", "0D543D"]
 images_available_extensions = ["jpg", "jpeg", "bmp", "tiff", "png", "gif"]
 
 bits_resolution = 5
