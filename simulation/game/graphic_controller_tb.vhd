@@ -35,8 +35,7 @@ begin
             out_write_pixel     => out_write_pixel,
 
             in_player_position => (others => 0),
-            in_player_status   => DEFAULT_PLAYER_STATUS,
-            in_player_alive    => '0'
+            in_player_status   => DEFAULT_PLAYER_STATUS
         );
 
     -- RAM simulation

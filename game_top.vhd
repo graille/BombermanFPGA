@@ -53,7 +53,7 @@ architecture behavioral of GAME_TOP is
 
     signal gc_in_player_position     : vector := DEFAULT_VECTOR_POSITION;
     signal gc_in_player_status       : player_status_type := DEFAULT_PLAYER_STATUS;
-    signal gc_in_player_alive        : std_logic := '0';
+    
     signal gc_out_request_player      : integer range 0 to NB_PLAYERS - 1 := 0;
 
     signal gc_out_write_pixel : std_logic := '0';
@@ -157,8 +157,7 @@ begin
 
         in_requested_player     => gc_out_request_player,
         out_player_position     => gc_in_player_position,
-        out_player_status       => gc_in_player_status,
-        out_player_alive        => gc_in_player_alive
+        out_player_status       => gc_in_player_status
     );
 
     I_BLOCK_RAM: entity work.block_ram
@@ -189,8 +188,7 @@ begin
 
         out_request_player     => gc_out_request_player,
         in_player_position     => gc_in_player_position,
-        in_player_status       => gc_in_player_status,
-        in_player_alive        => gc_in_player_alive
+        in_player_status       => gc_in_player_status
     );
 
     I_PIXEL_RAM: entity work.pixel_ram

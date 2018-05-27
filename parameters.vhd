@@ -17,7 +17,6 @@ package PROJECT_PARAMS_PKG is
     constant GRID_ROWS : integer := 14;
     constant GRID_COLS : integer := 20;
 
-    constant VECTOR_PRECISION : integer := 12;
     constant STATE_PRECISION : integer := 2;
     constant PRNG_PRECISION : integer := 16;
     constant MAX_PLAYER_POWER : integer := 16;
@@ -25,6 +24,28 @@ package PROJECT_PARAMS_PKG is
     constant COLOR_BIT_PRECISION : integer := 5;
 
     constant NB_MAX_CHARACTER_DESIGN : integer := 7;
+
+    -- Screen parameters
+    constant FRAME_WIDTH : natural := 800;
+    constant FRAME_HEIGHT : natural := 600;
+
+    -- Vectors
+    constant VECTOR_PRECISION_Y : integer := 2**12;
+    constant VECTOR_PRECISION_X : integer := VECTOR_PRECISION_Y * FRAME_HEIGHT / FRAME_WIDTH; -- Ratio conservation
+    
+    constant DEFAULT_BLOCK_SIZE_X : integer := VECTOR_PRECISION_X / (GRID_ROWS + 1); -- Last column reserved
+    constant DEFAULT_BLOCK_SIZE_Y : integer := VECTOR_PRECISION_Y / GRID_COLS;
+    constant DEFAULT_PLAYER_HITBOX_X : integer := DEFAULT_BLOCK_SIZE_X * 2 / 3;
+    constant DEFAULT_PLAYER_HITBOX_Y : integer := DEFAULT_BLOCK_SIZE_Y * 2 / 3;
+    
+    -- Graphic elements
+    constant BLOCK_GRAPHIC_WIDTH : integer := FRAME_WIDTH / GRID_COLS;
+    constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / (GRID_ROWS + 1);
+
+    constant CHARACTER_GRAPHIC_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
+    constant CHARACTER_GRAPHIC_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
+    
+
 
     -- O-----> Y axis
     -- |
@@ -48,17 +69,16 @@ package PROJECT_PARAMS_PKG is
     constant CONTROL_SET_LEFT : commands_array_type := (x"1C", x"36", x"71", x"66");
     constant CONTROL_SET_BACK : commands_array_type := (x"1B", x"42", x"69", x"72");
     constant CONTROL_SET_RIGHT : commands_array_type := (x"23", x"46", x"7A", x"74");
+    constant CONTROL_SET_BOMB : commands_array_type := (x"01", x"01", x"01", x"01");
 
     ---------------------------------------------------------------------------
-    -- Graphics parameters
+    -- Graphical parameters
     ---------------------------------------------------------------------------
     -- Colors
     constant TRANSPARENT_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '1');
     constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := "01010";
 
     -- More details and values : http://web.mit.edu/6.111/www/s2004/NEWKIT/vga.shtml
-    constant FRAME_WIDTH : natural := 800;
-    constant FRAME_HEIGHT : natural := 600;
     --
     constant H_FP : natural := 40; --H front porch width (pixels)
     constant H_PW : natural := 128; --H sync pulse width (pixels)
@@ -70,11 +90,4 @@ package PROJECT_PARAMS_PKG is
     --
     constant H_POL : std_logic := '1';
     constant V_POL : std_logic := '1';
-    
-    -- Graphic elements
-    constant BLOCK_GRAPHIC_WIDTH : integer := FRAME_WIDTH / GRID_COLS;
-    constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / (GRID_ROWS + 1);
-
-    constant CHARACTER_GRAPHIC_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
-    constant CHARACTER_GRAPHIC_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
 end package;

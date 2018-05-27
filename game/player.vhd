@@ -21,8 +21,6 @@ entity player is
         in_next_block_process : in std_logic;
 
         out_position : out vector;
-        out_grid_position : out grid_position;
-        out_is_alive : out std_logic := '1';
         out_power : out integer range 0 to MAX_PLAYER_POWER - 1;
 
         out_action : out player_action := EMPTY_PLAYER_ACTION;
@@ -51,7 +49,7 @@ architecture behavioral of player is
     -- Bonus
     signal player_god_mode : std_logic := '0'; --
     signal player_wall_hack : std_logic := '0';
-    signal player_lives : integer range 0 to 3;
+    signal player_lives : integer range 0 to 3 := 1;
 
     -- Malus
     signal player_inversed_commands : std_logic := '0';
@@ -66,7 +64,7 @@ architecture behavioral of player is
     constant CONTROL_LEFT : io_signal := CONTROL_SET_LEFT(K);
     constant CONTROL_RIGHT : io_signal := CONTROL_SET_RIGHT(K);
 
-    constant CONTROL_BOMB : io_signal := x"f1";
+    constant CONTROL_BOMB : io_signal := CONTROL_SET_BOMB(K);
 begin
     process(clk)
         constant player_god_mode_duration : integer := 5000;
@@ -107,13 +105,13 @@ begin
                 if in_next_block_process = '1' then
                     case in_next_block.category is
                         when EXPLOSION_BLOCK_JUNCTION | EXPLOSION_BLOCK_MIDDLE | EXPLOSION_BLOCK_END =>
-                            if player_lives = 1 then
+                            if player_lives = 1 and player_god_mode = '0' then
                                 player_alive <= '0';
                             end if;
 
                             player_lives <= player_lives - 1;
                         when BONUS_SPEED_BLOCK => -- Speed Bonus
-                            if player_speed < 2**12 - 1 then
+                            if player_speed < 100 then
                                 player_speed <= player_speed * 2;
                             end if;
                         when BONUS_ADD_POWER_BLOCK => -- Power Bonus
@@ -169,7 +167,7 @@ begin
                     when others => grid_reset_position := (2, 2);
                 end case;
                         
-                player_position <= (grid_reset_position.i * 2**VECTOR_PRECISION / GRID_ROWS, grid_reset_position.j * 2**VECTOR_PRECISION / GRID_COLS);
+                player_position <= (grid_reset_position.i * (VECTOR_PRECISION_X / GRID_ROWS), grid_reset_position.j * (VECTOR_PRECISION_Y / GRID_COLS));
                 player_nb_bombs <= 0;
                 player_id <= (player_id + 1) mod 7;
             else
@@ -213,8 +211,7 @@ begin
         end if;
     end process;
 
-    out_player_status <= (player_id, player_state, player_direction);
+    out_player_status <= (player_id, player_state, player_direction, '1', player_alive);
     out_power <= player_power;
     out_position <= player_position;
-    out_is_alive <= player_alive;
 end behavioral;

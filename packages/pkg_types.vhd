@@ -40,8 +40,8 @@ package PROJECT_TYPES_PKG is
     -- X axis
 
     type vector is record
-        X : natural range 0 to (2**VECTOR_PRECISION) - 1;
-        Y : natural range 0 to (2**VECTOR_PRECISION) - 1;
+        X : natural range 0 to VECTOR_PRECISION_X - 1;
+        Y : natural range 0 to VECTOR_PRECISION_Y - 1;
     end record;
     type array_vector is array(natural range <>) of vector;
     constant DEFAULT_VECTOR_POSITION : vector := (0, 0);
@@ -76,9 +76,12 @@ package PROJECT_TYPES_PKG is
         id              : character_id_type;
 	    state		    : state_type;
 	    direction		: direction_type; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
+	    
+	    is_activated    : std_logic;
+	    is_alive        : std_logic;
     end record;
     type array_player_status_type is array(natural range <>) of player_status_type;
-    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0, D_DOWN);
+    constant DEFAULT_PLAYER_STATUS : player_status_type := (0, 0, D_DOWN, '1', '1');
 
     type player_action_category is (
         EMPTY_ACTION,
@@ -98,6 +101,6 @@ package PROJECT_TYPES_PKG is
     type players_status_type is array(NB_PLAYERS - 1 downto 0) of player_status_type;
 
     -- Processed constants
-    constant DEFAULT_BLOCK_SIZE : vector := (2**(VECTOR_PRECISION) / GRID_COLS, 2**(VECTOR_PRECISION) / GRID_COLS);
-    constant DEFAULT_PLAYER_HITBOX : vector := ((DEFAULT_BLOCK_SIZE.X * 2) / 3, (DEFAULT_BLOCK_SIZE.Y * 2) / 3);
+    constant DEFAULT_BLOCK_SIZE : vector := (DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
+    constant DEFAULT_PLAYER_HITBOX : vector := (DEFAULT_PLAYER_HITBOX_X, DEFAULT_PLAYER_HITBOX_Y);
 end package;

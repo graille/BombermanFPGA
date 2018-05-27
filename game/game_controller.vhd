@@ -31,7 +31,6 @@ entity game_controller is
         in_requested_player : in integer range 0 to NB_PLAYERS - 1;
         out_player_position: out vector;
         out_player_status: out player_status_type;
-        out_player_alive: out std_logic;
 
         out_time_remaining : out millisecond_count := 0
     );
@@ -51,7 +50,6 @@ architecture behavioral of game_controller is
 
     signal players_position : players_positions_type := (others => (others => 0));
     signal players_grid_position : players_grid_position_type := (others => (others => 0));
-    signal players_alive : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
     signal players_power : players_power_type := (others => 0);
 
     signal players_current_action : players_action_type := (others => EMPTY_PLAYER_ACTION);
@@ -131,11 +129,10 @@ architecture behavioral of game_controller is
     signal death_mode_activated : std_logic := '0';
 begin
     -- Players informations multiplexer (Combinatorial module)
-    process(in_requested_player, players_position, players_status, players_alive)
+    process(in_requested_player, players_position, players_status)
     begin
         out_player_position <= players_position(in_requested_player);
         out_player_status <= players_status(in_requested_player);
-        out_player_alive <= players_alive(in_requested_player);
     end process;
 
     -- Grid position updater
@@ -188,7 +185,6 @@ begin
                 in_next_block_process => players_process_blocks(k),
 
                 out_position => players_position(k),
-                out_is_alive => players_alive(k),
                 out_power => players_power(k),
 
                 out_action => players_current_action(k),
@@ -246,6 +242,7 @@ begin
     end process;
 
     process(clk)
+        variable players_alive : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
     begin
         if rising_edge(CLK) then
             if RST = '1' then
@@ -283,9 +280,14 @@ begin
                         end if;
 
                     when STATE_MAP_BUILD_BREAKABLE =>
-                        if prng_percent > 30
-                            and in_read_block.category /= UNBREAKABLE_BLOCK_1
-                            and in_read_block.category /= UNBREAKABLE_BLOCK_2
+                        if 
+                            prng_percent > 30
+                            and current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1
+                            and current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1
+                            and current_grid_position /= (1, 1) and current_grid_position /= (1,2) and current_grid_position /= (2,1)
+                            and current_grid_position /= (GRID_ROWS - 2, 1) and current_grid_position /= (GRID_ROWS - 2,2) and current_grid_position /= (GRID_ROWS - 3,1)
+                            and current_grid_position /= (GRID_ROWS - 2, GRID_COLS - 2) and current_grid_position /= (GRID_ROWS - 2, GRID_COLS - 3) and current_grid_position /= (GRID_ROWS - 3, GRID_COLS - 2)
+                            and current_grid_position /= (1, GRID_COLS - 2) and current_grid_position /= (1,GRID_COLS - 3) and current_grid_position /= (2,GRID_COLS - 2)
                         then
                             out_write <= '1';
                             out_block <= (BREAKABLE_BLOCK_0, 0, 0, millisecond, 0);
@@ -305,8 +307,8 @@ begin
                         end if;
 
                     when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>
-                        if current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1 and (current_grid_position.i + 1) mod 2 = 1 then
-                            if current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1 and (current_grid_position.j + 1) mod 2 = 1 then
+                        if current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1 and current_grid_position.i mod 2 = 0 then
+                            if current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1 and current_grid_position.j mod 2 = 0 then
                                 out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0);
                                 out_write <= '1';
                             end if;
@@ -325,6 +327,10 @@ begin
 
                     ----------------------------------------------------------------
                     when STATE_GAME =>
+                        for L in 0 to NB_PLAYERs - 1 loop
+                            players_alive(L) := players_status(L).is_alive;
+                        end loop;
+                    
                         if NB_PLAYERS_ALIVE(players_alive) <= 1 then
                             current_state <= STATE_GAME_OVER;
                         else
