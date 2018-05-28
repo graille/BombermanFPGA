@@ -82,6 +82,8 @@ architecture behavioral of game_controller is
         STATE_START,
         STATE_MENU_LOADING,
 
+        STATE_MAP_REINIT,
+        
         STATE_MAP_INIT,
             -- Place unbreakable blocks around the grid
             STATE_MAP_BUILD_UNBREAKABLE_BORDER,
@@ -259,8 +261,18 @@ begin
                         current_grid_position <= DEFAULT_GRID_POSITION;
                         current_state <= STATE_MENU_LOADING;
                     when STATE_MENU_LOADING =>
-                        current_state <= STATE_MAP_INIT;
+                        current_state <= STATE_MAP_REINIT;
                     ----------------------------------------------------------------
+                    when STATE_MAP_REINIT =>
+                        out_block <= (EMPTY_BLOCK, 0, 0, 0, 0);
+                        out_write <= '1';
+                        
+                        if current_grid_position = DEFAULT_LAST_GRID_POSITION then
+                            current_state <= STATE_MAP_INIT;
+                            current_grid_position <= DEFAULT_GRID_POSITION;
+                        else
+                            current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                        end if;
                     when STATE_MAP_INIT =>
                         current_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
                     when STATE_MAP_BUILD_UNBREAKABLE_BORDER =>
@@ -281,7 +293,7 @@ begin
 
                     when STATE_MAP_BUILD_BREAKABLE =>
                         if 
-                            prng_percent > 30
+                            prng_percent > 25
                             and current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1
                             and current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1
                             and current_grid_position /= (1, 1) and current_grid_position /= (1,2) and current_grid_position /= (2,1)
@@ -307,11 +319,16 @@ begin
                         end if;
 
                     when STATE_MAP_BUILD_UNBREAKABLE_INSIDE =>
-                        if current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1 and current_grid_position.i mod 2 = 0 then
-                            if current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1 and current_grid_position.j mod 2 = 0 then
-                                out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0);
-                                out_write <= '1';
-                            end if;
+                        if 
+                            current_grid_position.i /= 1 and current_grid_position.i /= GRID_ROWS - 2 and current_grid_position.i mod 2 = 0 
+                            and current_grid_position.j /= 1 and current_grid_position.j /= GRID_COLS - 2 and current_grid_position.j mod 2 = 0 
+                            and current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1
+                            and current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1
+                        then
+                            out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0);
+                            out_write <= '1';
+                        else
+                            out_write <= '0';
                         end if;
 
                         current_state <= STATE_MAP_BUILD_UNBREAKABLE_INSIDE_ROTATE;

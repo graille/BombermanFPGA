@@ -69,14 +69,14 @@ package PROJECT_PARAMS_PKG is
     constant CONTROL_SET_LEFT : commands_array_type := (x"1C", x"36", x"71", x"66");
     constant CONTROL_SET_BACK : commands_array_type := (x"1B", x"42", x"69", x"72");
     constant CONTROL_SET_RIGHT : commands_array_type := (x"23", x"46", x"7A", x"74");
-    constant CONTROL_SET_BOMB : commands_array_type := (x"01", x"01", x"01", x"01");
+    constant CONTROL_SET_BOMB : commands_array_type := (x"24", x"44", x"7d", x"70");
 
     ---------------------------------------------------------------------------
     -- Graphical parameters
     ---------------------------------------------------------------------------
     -- Colors
     constant TRANSPARENT_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '1');
-    constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := "01010";
+    constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := "00011";
 
     -- More details and values : http://web.mit.edu/6.111/www/s2004/NEWKIT/vga.shtml
     --

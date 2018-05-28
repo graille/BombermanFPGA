@@ -79,25 +79,28 @@ architecture behavioral of GAME_TOP is
     signal pixel_on_screen_position : screen_position_type;
     signal VGA_active : std_logic := '0';
 
+    signal VGA_HS_O_t : STD_LOGIC;
+    signal VGA_VS_O_t : STD_LOGIC;
+
     -- Keyboard
     signal keyboard_output : std_logic_vector(31 downto 0);
     signal CLK_KEYBOARD : std_logic;
     signal COLOR_R, COLOR_G, COLOR_B: STD_LOGIC_VECTOR (7 downto 0);
 
     -- Component
---    component keyboard_top
---    port(
---        CLK100MHZ : in std_logic;
---        PS2_CLK : in std_logic;
---        PS2_DATA : in std_logic;
+    component keyboard_top
+    port(
+        CLK100MHZ : in std_logic;
+        PS2_CLK : in std_logic;
+        PS2_DATA : in std_logic;
 
---        SEG : out std_logic_vector(6 downto 0);
---        AN : out std_logic_vector(7 downto 0);
---        out_keycode : out std_logic_vector(31 downto 0);
---        DP : out std_logic;
---        UART_TXD : out std_logic
---    );
---    end component;
+        SEG : out std_logic_vector(6 downto 0);
+        AN : out std_logic_vector(7 downto 0);
+        out_keycode : out std_logic_vector(31 downto 0);
+        DP : out std_logic;
+        UART_TXD : out std_logic
+    );
+    end component;
 
     component clk_wiz_0
     port (
@@ -120,19 +123,19 @@ begin
     -- I/O
     LED <= SW;
 
---    I_KEYBOARD:keyboard_top
---    port map (
---        CLK100MHZ => CLK100,
---        PS2_CLK => PS2_CLK,
---        PS2_DATA => PS2_DATA,
+    I_KEYBOARD:keyboard_top
+    port map (
+        CLK100MHZ => CLK100,
+        PS2_CLK => PS2_CLK,
+        PS2_DATA => PS2_DATA,
 
---        SEG => SEG,
---        AN => AN,
---        out_keycode => keyboard_output,
+        SEG => SEG,
+        AN => AN,
+        out_keycode => keyboard_output,
 
---        DP => DP,
---        UART_TXD => UART_TXD
---    );
+        DP => DP,
+        UART_TXD => UART_TXD
+    );
 
     I_GAME_CONTROLLER: entity work.game_controller
     generic map (
@@ -188,7 +191,9 @@ begin
 
         out_request_player     => gc_out_request_player,
         in_player_position     => gc_in_player_position,
-        in_player_status       => gc_in_player_status
+        in_player_status       => gc_in_player_status,
+        
+        in_new_image        => VGA_VS_O_t
     );
 
     I_PIXEL_RAM: entity work.pixel_ram
@@ -222,9 +227,11 @@ begin
 
         out_active => VGA_active,
 
-        VGA_HS_O => VGA_HS_O,
-        VGA_VS_O => VGA_VS_O,
+        VGA_HS_O => VGA_HS_O_t,
+        VGA_VS_O => VGA_VS_O_t,
 
         VGA_POSITION => pixel_on_screen_position
     );
+    VGA_HS_O <= VGA_HS_O_t;
+    VGA_VS_O <= VGA_VS_O_t;
 end behavioral;

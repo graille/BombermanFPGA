@@ -23,13 +23,21 @@ entity graphic_controller is
         -- Players informations
         out_request_player : out integer range 0 to NB_PLAYERS - 1;
         in_player_position : in vector;
-        in_player_status : in player_status_type
+        in_player_status : in player_status_type;
+        
+        in_new_image : in std_logic := '0'
     );
 end graphic_controller;
 
 architecture behavioral of graphic_controller is
     type process_state_type is (
         START_STATE,
+
+        -- Write bottom bar
+        ROTATE_BOTTOM_CHARACTER_STATE,
+        WAIT_BOTTOM_CHARACTER_STATE,
+        WAIT_BOTTOM_CHARACTER_PIXEL_STATE,
+        WRITE_BOTTOM_CHARACTER_PIXEL_STATE,
 
         -- Write blocks
         ROTATE_BLOCK_STATE,
@@ -129,9 +137,21 @@ begin
     process(block_current_color, character_current_color, current_state, current_pixel_position, current_player_status)
     begin
         case current_state is
-            when TEST =>
-                out_write_pixel <= '1';
-                out_pixel_value <= std_logic_vector(to_unsigned((current_pixel_position.X + current_pixel_position.Y) mod 32, COLOR_BIT_PRECISION));
+--            when TEST =>
+--                out_write_pixel <= '1';
+--                out_pixel_value <= std_logic_vector(to_unsigned((current_pixel_position.X + current_pixel_position.Y) mod 32, COLOR_BIT_PRECISION));
+            when WRITE_BOTTOM_CHARACTER_PIXEL_STATE =>
+                if character_current_color /= TRANSPARENT_COLOR then
+                    out_write_pixel <= '1';
+                    out_pixel_value <= character_current_color;
+                else
+                    out_write_pixel <= '1';
+                    if (current_player_status.is_alive and current_player_status.is_activated) = '1' then
+                        out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
+                    else
+                        out_pixel_value <= std_logic_vector(to_unsigned(12, COLOR_BIT_PRECISION));
+                    end if;
+                end if;
             when WRITE_BLOCK_PIXEL_STATE =>
                 if block_current_color /= TRANSPARENT_COLOR then
                     out_write_pixel <= '1';
@@ -142,7 +162,7 @@ begin
                 end if;
             when WRITE_CHARACTER_PIXEL_STATE =>
                 if character_current_color /= TRANSPARENT_COLOR then
-                    out_write_pixel <= current_player_status.is_alive and current_player_status.is_activated;
+                    out_write_pixel <= '1';
                     out_pixel_value <= character_current_color;
                 else
                     out_write_pixel <= '0';
@@ -174,6 +194,9 @@ begin
 
                 current_block_position <= DEFAULT_BLOCK_POSITION;
                 current_character_position <= DEFAULT_CHARACTER_POSITION;
+                
+                current_player_status <= DEFAULT_PLAYER_STATUS;
+                current_player_position <= DEFAULT_VECTOR_POSITION;
 
                 current_player_nb <= 0;
             else
@@ -181,20 +204,73 @@ begin
                     when START_STATE =>
                         -- Variables reinitialisation
                         current_grid_position <= DEFAULT_GRID_POSITION;
-
+                        current_pixel_position <= DEFAULT_SCREEN_POSITION;
+                        
                         current_block_position <= DEFAULT_BLOCK_POSITION;
                         current_character_position <= DEFAULT_CHARACTER_POSITION;
 
                         current_player_nb <= 0;
+                        current_player_status <= DEFAULT_PLAYER_STATUS;
+                        current_player_position <= DEFAULT_VECTOR_POSITION;
 
                         -- Go to next state
-                        current_state <= WAIT_BLOCK_STATE;
+                        if in_new_image = '1' then
+                            current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                        end if;
+                    ----------------------------------------------
+                    -- BOTTOM BAR
+                    ----------------------------------------------
+                    when ROTATE_BOTTOM_CHARACTER_STATE =>
+                        if current_player_nb = NB_PLAYERS - 1 then
+                            current_grid_position <= DEFAULT_GRID_POSITION;
+                            current_character_position <= DEFAULT_CHARACTER_POSITION;
+                            
+                            current_player_nb <= 0;
+                            
+                            current_state <= WAIT_BLOCK_STATE;
+                        else
+                            current_character_position <= DEFAULT_CHARACTER_POSITION;
+                            current_grid_position.j <= current_grid_position.j + 1;
+                            
+                            current_player_nb <= (current_player_nb + 1) mod NB_PLAYERS;
+                            current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                        end if;
+                    when WAIT_BOTTOM_CHARACTER_STATE =>
+                        waiting_clocks := waiting_clocks - 1;
+                        
+                        current_player_status <= in_player_status;
+                        
+                        if waiting_clocks = 0 then
+                            waiting_clocks := 2;
+                            current_state <= WAIT_BOTTOM_CHARACTER_PIXEL_STATE;
+                        else
+                            current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                        end if;
+                    when WAIT_BOTTOM_CHARACTER_PIXEL_STATE =>
+                        current_state <= WRITE_BOTTOM_CHARACTER_PIXEL_STATE;
+                    when WRITE_BOTTOM_CHARACTER_PIXEL_STATE =>
+                        current_pixel_position.Y <= (current_grid_position.j * CHARACTER_GRAPHIC_WIDTH) + current_character_position.Y;
+                        current_pixel_position.X <= (GRID_ROWS * CHARACTER_GRAPHIC_HEIGHT) + current_character_position.X;
+
+                        -- Update state
+                        if current_character_position = DEFAULT_LAST_CHARACTER_POSITION then
+                            current_state <= ROTATE_BOTTOM_CHARACTER_STATE;
+                        elsif current_character_position.Y = 0 then
+                            current_character_position <= (current_character_position.X - 1, CHARACTER_GRAPHIC_WIDTH - 1);
+                            current_state <= WAIT_BOTTOM_CHARACTER_PIXEL_STATE;
+                        else
+                            current_character_position <= (current_character_position.X, current_character_position.Y - 1);
+                            current_state <= WAIT_BOTTOM_CHARACTER_PIXEL_STATE;
+                        end if;
+                    ----------------------------------------------
+                    -- GRID
+                    ----------------------------------------------
                     when ROTATE_BLOCK_STATE =>
                         current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
                         current_block_position <= DEFAULT_BLOCK_POSITION;
 
                         if current_grid_position = DEFAULT_LAST_GRID_POSITION then
-                            current_state <= ROTATE_CHARACTER_STATE;
+                            current_state <= WAIT_CHARACTER_STATE;
                         else
                             current_state <= WAIT_BLOCK_STATE;
                         end if;
@@ -227,7 +303,6 @@ begin
                     ----------------------------------------------
                     -- CHARACTERS
                     ----------------------------------------------
-                    
                     when ROTATE_CHARACTER_STATE =>
                         current_player_nb <= (current_player_nb + 1) mod NB_PLAYERS;
                         current_character_position <= DEFAULT_CHARACTER_POSITION;
