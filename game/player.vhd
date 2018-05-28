@@ -75,12 +75,12 @@ architecture behavioral of player is
     signal player_direction : direction_type := D_DOWN;
 
     -- Commands
-    constant CONTROL_FORWARD : io_signal := CONTROL_SET_FORWARD(K);
-    constant CONTROL_BACK : io_signal := CONTROL_SET_BACK(K);
-    constant CONTROL_LEFT : io_signal := CONTROL_SET_LEFT(K);
-    constant CONTROL_RIGHT : io_signal := CONTROL_SET_RIGHT(K);
+    constant CONTROL_FORWARD : io_signal := CONTROLS_CONTAINER(0)(K);
+    constant CONTROL_BACK : io_signal := CONTROLS_CONTAINER(1)(K);
+    constant CONTROL_LEFT : io_signal := CONTROLS_CONTAINER(2)(K);
+    constant CONTROL_RIGHT : io_signal := CONTROLS_CONTAINER(3)(K);
 
-    constant CONTROL_BOMB : io_signal := CONTROL_SET_BOMB(K);
+    constant CONTROL_BOMB : io_signal := CONTROLS_CONTAINER(4)(K);
 begin
     process(clk)
         constant player_god_mode_duration : integer := 5000;

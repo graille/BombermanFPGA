@@ -53,7 +53,7 @@ architecture behavioral of GAME_TOP is
 
     signal gc_in_player_position     : vector := DEFAULT_VECTOR_POSITION;
     signal gc_in_player_status       : player_status_type := DEFAULT_PLAYER_STATUS;
-    
+
     signal gc_out_request_player      : integer range 0 to NB_PLAYERS - 1 := 0;
 
     signal gc_out_write_pixel : std_logic := '0';
@@ -82,8 +82,11 @@ architecture behavioral of GAME_TOP is
     signal VGA_HS_O_t : STD_LOGIC;
     signal VGA_VS_O_t : STD_LOGIC;
 
-    -- Keyboard
+    -- I/O
     signal keyboard_output : std_logic_vector(31 downto 0);
+    signal next_io : io_signal;
+
+
     signal CLK_KEYBOARD : std_logic;
     signal COLOR_R, COLOR_G, COLOR_B: STD_LOGIC_VECTOR (7 downto 0);
 
@@ -111,14 +114,13 @@ architecture behavioral of GAME_TOP is
     );
     end component;
 begin
+--    LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
+--        LED(K * 4) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_FORWARD(K) else '0';
+--        LED(K * 4 + 1) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_LEFT(K) else '0';
+--        LED(K * 4 + 2) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_BACK(K) else '0';
+--        LED(K * 4 + 3) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_RIGHT(K) else '0';
+--    end generate;
 
-    LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
-        LED(K * 4) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_FORWARD(K) else '0';
-        LED(K * 4 + 1) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_LEFT(K) else '0';
-        LED(K * 4 + 2) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_BACK(K) else '0';
-        LED(K * 4 + 3) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_RIGHT(K) else '0';
-    end generate;
-    
     CLK_DIV : clk_wiz_0
     port map (
         CLK_IN1 => CLK100,
@@ -129,11 +131,23 @@ begin
     );
 
     -- I/O
-    --LED <= SW;
+    LED <= SW;
+
+    I_IO_CONTROLLER : entity work.io_controller
+    generic map (
+        FREQUENCY => FREQUENCY
+    )
+    port map (
+        CLK => CLK,
+        RST         => RST,
+
+        in_command  => keyboard_output(15 downto 0),
+        out_command => next_io
+    );
 
     I_KEYBOARD:keyboard_top
     port map (
-        CLK100MHZ => CLK100,
+        CLK100MHZ => CLK_KEYBOARD,
         PS2_CLK => PS2_CLK,
         PS2_DATA => PS2_DATA,
 
@@ -156,7 +170,7 @@ begin
 
         in_seed           => SW,
 
-        in_io             => keyboard_output(7 downto 0),
+        in_io             => next_io,
         in_read_block     => gu_in_read_block,
 
         game_end          => gu_out_game_end,
@@ -200,7 +214,7 @@ begin
         out_request_player     => gc_out_request_player,
         in_player_position     => gc_in_player_position,
         in_player_status       => gc_in_player_status,
-        
+
         in_new_image        => VGA_VS_O_t
     );
 

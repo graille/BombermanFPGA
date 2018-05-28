@@ -12,7 +12,7 @@ use work.PROJECT_POS_FUNCTIONS_PKG.all;
 entity game_controller is
     generic(
         SEED_LENGTH : integer := 16;
-        FREQUENCY : integer := 100000000
+        FREQUENCY : integer := 80000000
     );
     port(
         clk, rst : in std_logic;
