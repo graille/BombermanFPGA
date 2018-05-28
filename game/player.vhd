@@ -34,11 +34,27 @@ architecture behavioral of player is
     constant PLAYER_INITIAL_POSITION : vector := (0,0);
     constant DEFAULT_SPEED : integer := 1;
 
+    -- Functions
+    function INIT_PLAYER_POSITION
+        return vector is
+        variable grid_reset_position : grid_position := DEFAULT_GRID_POSITION;
+    begin
+        case K is
+            when 0 => grid_reset_position := (1, 1);
+            when 1 => grid_reset_position := (1, GRID_COLS - 2);
+            when 2 => grid_reset_position := (GRID_ROWS - 3, 1);
+            when 3 => grid_reset_position := (GRID_ROWS - 3, GRID_COLS - 2);
+            when others => grid_reset_position := (2, 2);
+        end case;
+                
+        return (grid_reset_position.i * (VECTOR_PRECISION_X / GRID_ROWS), grid_reset_position.j * (VECTOR_PRECISION_Y / GRID_COLS));
+    end INIT_PLAYER_POSITION;
+
     -- Players states
     signal player_alive : std_logic := '1'; -- 1 = alive, 0 = dead
 
     -- Players informations
-    signal player_position : vector := PLAYER_INITIAL_POSITION;
+    signal player_position : vector := INIT_PLAYER_POSITION;
     signal player_speed : integer range 0 to 2**12 - 1;
     signal player_power : integer range 0 to MAX_PLAYER_POWER := 1;
 
@@ -159,15 +175,7 @@ begin
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                case K is
-                    when 0 => grid_reset_position := (1, 1);
-                    when 1 => grid_reset_position := (1, GRID_COLS - 2);
-                    when 2 => grid_reset_position := (GRID_ROWS - 2, 1);
-                    when 3 => grid_reset_position := (GRID_ROWS - 2, GRID_COLS - 2);
-                    when others => grid_reset_position := (2, 2);
-                end case;
-                        
-                player_position <= (grid_reset_position.i * (VECTOR_PRECISION_X / GRID_ROWS), grid_reset_position.j * (VECTOR_PRECISION_Y / GRID_COLS));
+                player_position <= INIT_PLAYER_POSITION;
                 player_nb_bombs <= 0;
                 player_id <= (player_id + 1) mod 7;
             else

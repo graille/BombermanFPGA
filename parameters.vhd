@@ -44,8 +44,6 @@ package PROJECT_PARAMS_PKG is
 
     constant CHARACTER_GRAPHIC_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
     constant CHARACTER_GRAPHIC_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
-    
-
 
     -- O-----> Y axis
     -- |
@@ -63,12 +61,11 @@ package PROJECT_PARAMS_PKG is
     ---------------------------------------------------------------------------
     -- Controls parameters
     ---------------------------------------------------------------------------
-    type commands_array_type is array(NB_PLAYERS - 1 downto 0) of std_logic_vector(7 downto 0);
-
+    type commands_array_type is array(0 to NB_PLAYERS - 1) of std_logic_vector(7 downto 0);
     constant CONTROL_SET_FORWARD : commands_array_type := (x"1D", x"43", x"6C", x"75");
-    constant CONTROL_SET_LEFT : commands_array_type := (x"1C", x"36", x"71", x"66");
+    constant CONTROL_SET_LEFT : commands_array_type := (x"1C", x"3b", x"71", x"66");
     constant CONTROL_SET_BACK : commands_array_type := (x"1B", x"42", x"69", x"72");
-    constant CONTROL_SET_RIGHT : commands_array_type := (x"23", x"46", x"7A", x"74");
+    constant CONTROL_SET_RIGHT : commands_array_type := (x"23", x"4b", x"7A", x"74");
     constant CONTROL_SET_BOMB : commands_array_type := (x"24", x"44", x"7d", x"70");
 
     ---------------------------------------------------------------------------

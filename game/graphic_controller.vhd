@@ -145,10 +145,11 @@ begin
                     out_write_pixel <= '1';
                     out_pixel_value <= character_current_color;
                 else
-                    out_write_pixel <= '1';
                     if (current_player_status.is_alive and current_player_status.is_activated) = '1' then
-                        out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
+                        out_write_pixel <= '0';
+                        out_pixel_value <= std_logic_vector(to_unsigned(0, COLOR_BIT_PRECISION));
                     else
+                        out_write_pixel <= '1';
                         out_pixel_value <= std_logic_vector(to_unsigned(12, COLOR_BIT_PRECISION));
                     end if;
                 end if;
@@ -162,7 +163,7 @@ begin
                 end if;
             when WRITE_CHARACTER_PIXEL_STATE =>
                 if character_current_color /= TRANSPARENT_COLOR then
-                    out_write_pixel <= '1';
+                    out_write_pixel <= current_player_status.is_alive and current_player_status.is_activated;
                     out_pixel_value <= character_current_color;
                 else
                     out_write_pixel <= '0';
@@ -181,8 +182,8 @@ begin
 
     -- Control signals controller
     process(clk)
-        constant VECTOR_HEIGHT_FACTOR : integer := FRAME_HEIGHT / VECTOR_PRECISION_X;
-        constant VECTOR_WIDTH_FACTOR : integer := FRAME_WIDTH / VECTOR_PRECISION_Y;
+        constant VECTOR_HEIGHT_FACTOR : integer := (FRAME_HEIGHT * 2**20) / VECTOR_PRECISION_X;
+        constant VECTOR_WIDTH_FACTOR : integer := (FRAME_WIDTH * 2**20) / VECTOR_PRECISION_Y;
         
         variable waiting_clocks : integer range 0 to 15 := 2;
     begin
@@ -247,11 +248,11 @@ begin
                             current_state <= WAIT_BOTTOM_CHARACTER_STATE;
                         end if;
                     when WAIT_BOTTOM_CHARACTER_PIXEL_STATE =>
-                        current_state <= WRITE_BOTTOM_CHARACTER_PIXEL_STATE;
-                    when WRITE_BOTTOM_CHARACTER_PIXEL_STATE =>
                         current_pixel_position.Y <= (current_grid_position.j * CHARACTER_GRAPHIC_WIDTH) + current_character_position.Y;
                         current_pixel_position.X <= (GRID_ROWS * CHARACTER_GRAPHIC_HEIGHT) + current_character_position.X;
-
+                        
+                        current_state <= WRITE_BOTTOM_CHARACTER_PIXEL_STATE;
+                    when WRITE_BOTTOM_CHARACTER_PIXEL_STATE =>
                         -- Update state
                         if current_character_position = DEFAULT_LAST_CHARACTER_POSITION then
                             current_state <= ROTATE_BOTTOM_CHARACTER_STATE;
@@ -285,11 +286,11 @@ begin
                             current_state <= WAIT_BLOCK_STATE;
                         end if;
                     when WAIT_BLOCK_PIXEL_STATE =>
-                        current_state <= WRITE_BLOCK_PIXEL_STATE;
-                    when WRITE_BLOCK_PIXEL_STATE =>
                         current_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
                         current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
-
+                    
+                        current_state <= WRITE_BLOCK_PIXEL_STATE;
+                    when WRITE_BLOCK_PIXEL_STATE =>
                         -- Update state
                         if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
                             current_state <= ROTATE_BLOCK_STATE;
@@ -325,11 +326,11 @@ begin
                             current_state <= WAIT_CHARACTER_STATE;
                         end if;
                     when WAIT_CHARACTER_PIXEL_STATE =>
+                        current_pixel_position.X <= ((current_player_position.X * VECTOR_HEIGHT_FACTOR) / 2**20)  + current_character_position.X;
+                        current_pixel_position.Y <= ((current_player_position.Y * VECTOR_WIDTH_FACTOR) / 2**20)  + current_character_position.Y;
+                        
                         current_state <= WRITE_CHARACTER_PIXEL_STATE;
                     when WRITE_CHARACTER_PIXEL_STATE =>
-                        current_pixel_position.X <= (current_player_position.X * VECTOR_HEIGHT_FACTOR) + current_character_position.X;
-                        current_pixel_position.Y <= (current_player_position.Y * VECTOR_WIDTH_FACTOR) + current_character_position.Y;
-
                         -- Update state
                         if current_character_position = DEFAULT_LAST_CHARACTER_POSITION then
                             current_state <= ROTATE_CHARACTER_STATE;
