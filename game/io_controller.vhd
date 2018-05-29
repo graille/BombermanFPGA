@@ -9,9 +9,6 @@ use work.PROJECT_POS_FUNCTIONS_PKG.all;
 use work.PROJECT_BLOCKS_PKG.all;
 
 entity io_controller is
-    generic(
-        FREQUENCY : integer := 80000000
-    );
     port(
         CLK, RST : in std_logic;
 
@@ -29,6 +26,7 @@ architecture behavioral of io_controller is
     signal current_player : integer range 0 to NB_PLAYERS - 1 := 0;
 
     signal command_reg : std_logic_vector(15 downto 0) := (others => '0');
+    signal next_stop : std_logic := '0';
 begin
     process(clk)
     begin
@@ -38,23 +36,27 @@ begin
                 current_command <= 0; 
                 current_player <= 0;
             else
+                -- Check and update each commands
                 command_reg <= in_command;
                 
-                -- Check and update each commands
                 for K in 0 to CONTROLS_CONTAINER'length - 1 loop
                     for N in 0 to NB_PLAYERS - 1 loop
-                        if command_reg(7 downto 0) = CONTROLS_CONTAINER(K)(N) then
-                            if command_reg(15 downto 8) = x"F0" then
-                                controls_status(K)(N) <= '0';
-                            else
-                                controls_status(K)(N) <= '1';
+                        if command_reg(7 downto 0) = x"F0" then
+                            next_stop <= '1';
+                        else 
+                            if command_reg(7 downto 0) = CONTROLS_CONTAINER(K)(N) then
+                                if next_stop = '1' then
+                                    controls_status(K)(N) <= '0';
+                                    next_stop <= '0';
+                                else
+                                    controls_status(K)(N) <= '1';
+                                end if;
                             end if;
                         end if;
                     end loop;
                 end loop;  
                 
                 -- Rotate current command
-
                 if current_command = (CONTROLS_CONTAINER'length - 1) and current_player = (NB_PLAYERS - 1) then
                     current_command <= 0;
                     current_player <= 0;

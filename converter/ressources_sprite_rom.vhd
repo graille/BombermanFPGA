@@ -22,7 +22,7 @@ entity ressources_sprite_rom is
 end ressources_sprite_rom;
 
 architecture behavioral of ressources_sprite_rom is
-    subtype word_t is std_logic_vector(199 downto 0);
+    subtype word_t is std_logic_vector(0 to 199);
     type memory_t is array(0 to 1679) of word_t;
 
     function init_mem 

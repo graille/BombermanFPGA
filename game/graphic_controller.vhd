@@ -94,30 +94,8 @@ architecture behavioral of graphic_controller is
         X : integer range 0 to FONT_GRAPHIC_HEIGHT - 1;
         Y : integer range 0 to FONT_GRAPHIC_WIDTH - 1;
     end record;
-    constant DEFAULT_FONT_POSITION : font_position_type := (FONT_GRAPHIC_HEIGHT - 1, FONT_GRAPHIC_WIDTH - 1);
-    constant DEFAULT_LAST_FONT_POSITION : font_position_type := (0, 0);
-
-    function SELECT_FONT(nb : integer)
-        return integer is
-        variable result : integer;
-    begin
-        case nb is
-            when 0 => result := 16;
-            when 1 => result := 17;
-            when 2 => result := 18;
-            when 3 => result := 19;
-            when 4 => result := 20;
-            when 5 => result := 21;
-            when 6 => result := 22;
-            when 7 => result := 23;
-            when 8 => result := 24;
-            when 9 => result := 25;
-            when 10 => result := 26;
-            when others => result := 0;
-        end case;
-                
-        return result;
-    end SELECT_FONT;
+    constant DEFAULT_FONT_POSITION : font_position_type := (0, 0);
+    constant DEFAULT_LAST_FONT_POSITION : font_position_type := (FONT_GRAPHIC_HEIGHT - 1, FONT_GRAPHIC_WIDTH - 1);
 
     -- Grid signals
     signal current_state : process_state_type := START_STATE;
@@ -149,7 +127,7 @@ architecture behavioral of graphic_controller is
     signal font_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '0');
     
     -- State
-    signal first_passage_done : std_logic := '0';
+    signal actualize_empty : std_logic := '1';
 begin
     -- This ROM contains all blocks sprites
     RESSOURCES_ROM_INSTANCE:entity work.ressources_sprite_rom
@@ -213,7 +191,7 @@ begin
                     end if;
                 end if;
             when WRITE_BOTTOM_TIMER_PIXEL_STATE =>
-                if font_current_color /= TRANSPARENT_COLOR then
+                if font_current_color = "00000" then
                     out_write_pixel <= '1';
                     out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
                 else
@@ -267,6 +245,8 @@ begin
                 current_player_position <= DEFAULT_VECTOR_POSITION;
 
                 current_player_nb <= 0;
+                
+                actualize_empty <= '1';
             else
                 time_remaining <= in_time_remaining / 1000;
                 
@@ -295,7 +275,7 @@ begin
                             
                             current_player_nb <= 0;
                             
-                            current_state <= ROTATE_BOTTOM_TIMER_STATE;
+                            current_state <= GAME_TRANSITION_STATE;
                         else
                             current_character_position <= DEFAULT_CHARACTER_POSITION;
                             current_grid_position.j <= current_grid_position.j + 1;
@@ -345,16 +325,16 @@ begin
                             
                             case current_grid_position.j is
                                 when GRID_COLS - 2 =>
-                                    current_timer_nb <= SELECT_FONT(time_remaining mod 10);
+                                    current_timer_nb <= 16 + (time_remaining mod 10);
                                     current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when GRID_COLS - 3 =>
-                                    current_timer_nb <= SELECT_FONT((time_remaining / 10) mod 10);
+                                    current_timer_nb <= 16 + ((time_remaining / 10) mod 10);
                                     current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when GRID_COLS - 4 =>
-                                    current_timer_nb <= 10;
+                                    current_timer_nb <= (10) + 16;
                                     current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when GRID_COLS - 5 =>
-                                    current_timer_nb <= SELECT_FONT((time_remaining / 60) mod 10);
+                                    current_timer_nb <= 16 + ((time_remaining / 60) mod 10);
                                     current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when others => 
                                     current_timer_nb <= 0;
@@ -371,8 +351,8 @@ begin
                             current_state <= WAIT_BOTTOM_TIMER_STATE;
                         end if;
                     when WAIT_BOTTOM_TIMER_PIXEL_STATE =>
-                        current_pixel_position.Y <= (current_grid_position.j * FONT_GRAPHIC_WIDTH) + current_font_position.Y;
-                        current_pixel_position.X <= (GRID_ROWS * FONT_GRAPHIC_HEIGHT) + current_font_position.X;
+                        current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_font_position.Y;
+                        current_pixel_position.X <= (GRID_ROWS * BLOCK_GRAPHIC_HEIGHT) + current_font_position.X;
                         
                         current_state <= WRITE_BOTTOM_TIMER_PIXEL_STATE;
                     when WRITE_BOTTOM_TIMER_PIXEL_STATE =>
@@ -380,10 +360,10 @@ begin
                         if current_font_position = DEFAULT_LAST_FONT_POSITION then
                             current_state <= ROTATE_BOTTOM_TIMER_STATE;
                         elsif current_font_position.Y = 0 then
-                            current_font_position <= (current_font_position.X - 1, CHARACTER_GRAPHIC_WIDTH - 1);
+                            current_font_position <= (current_font_position.X + 1, 0);
                             current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                         else
-                            current_font_position <= (current_font_position.X, current_font_position.Y - 1);
+                            current_font_position <= (current_font_position.X, current_font_position.Y + 1);
                             current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                         end if;
                     ----------------------------------------------
@@ -414,7 +394,7 @@ begin
                         current_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
                         current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
                     
-                        if current_block.category /= EMPTY_BLOCK and first_passage_done = '1' then
+                        if current_block.category = EMPTY_BLOCK and actualize_empty = '0' then
                             current_state <= ROTATE_BLOCK_STATE;
                         else 
                             current_state <= WRITE_BLOCK_PIXEL_STATE;
@@ -471,7 +451,7 @@ begin
                             current_state <= WAIT_CHARACTER_PIXEL_STATE;
                         end if;
                     when END_STATE =>
-                        first_passage_done <= '1';
+                        actualize_empty <= not(actualize_empty);
                         current_state <= START_STATE;
                     when others => null;
                 end case;
