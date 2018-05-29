@@ -23,7 +23,7 @@ end font_sprite_rom;
 
 architecture behavioral of font_sprite_rom is
     subtype word_t is std_logic_vector(139 downto 0);
-    type memory_t is array(3551 downto 0) of word_t;
+    type memory_t is array(0 to 3551) of word_t;
 
     function init_mem 
         return memory_t is

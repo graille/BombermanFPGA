@@ -41,6 +41,14 @@ architecture behavioral of graphic_controller is
         WAIT_BOTTOM_CHARACTER_PIXEL_STATE,
         WRITE_BOTTOM_CHARACTER_PIXEL_STATE,
 
+        -- Write bottom timer
+        ROTATE_BOTTOM_TIME_STATE,
+        WAIT_BOTTOM_TIME_STATE,
+        WAIT_BOTTOM_TIME_PIXEL_STATE,
+        WRITE_BOTTOM_TIME_PIXEL_STATE,
+        
+        GAME_TRANSITION_STATE,
+
         -- Write blocks
         ROTATE_BLOCK_STATE,
         WAIT_BLOCK_STATE,
@@ -137,6 +145,9 @@ architecture behavioral of graphic_controller is
     -- Timer
     signal current_font_position : font_position_type := DEFAULT_FONT_POSITION;
     signal current_timer_nb : integer range 0 to 15 := 0;
+    signal time_remaining : millisecond_count := 0;
+    
+    signal font_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '0');
 begin
     -- This ROM contains all blocks sprites
     RESSOURCES_ROM_INSTANCE:entity work.ressources_sprite_rom
@@ -167,14 +178,25 @@ begin
 
         out_color => character_current_color
     );
+    
+    FONT_ROM_INSTANCE:entity work.font_sprite_rom
+    port map (
+        clk => clk,
+
+        in_sprite_id => current_timer_nb,
+        in_sprite_state => 0,
+        in_sprite_direction => 0,
+
+        in_sprite_row => current_font_position.X,
+        in_sprite_col => current_font_position.Y,
+
+        out_color => font_current_color
+    );
 
     -- Out color multiplexer
-    process(block_current_color, character_current_color, current_state, current_pixel_position, current_player_status)
+    process(block_current_color, character_current_color, font_current_color, current_state, current_pixel_position, current_player_status)
     begin
         case current_state is
---            when TEST =>
---                out_write_pixel <= '1';
---                out_pixel_value <= std_logic_vector(to_unsigned((current_pixel_position.X + current_pixel_position.Y) mod 32, COLOR_BIT_PRECISION));
             when WRITE_BOTTOM_CHARACTER_PIXEL_STATE =>
                 if character_current_color /= TRANSPARENT_COLOR then
                     out_write_pixel <= '1';
@@ -187,6 +209,13 @@ begin
                         out_write_pixel <= '1';
                         out_pixel_value <= std_logic_vector(to_unsigned(12, COLOR_BIT_PRECISION));
                     end if;
+                end if;
+            when WRITE_BOTTOM_TIME_PIXEL_STATE =>
+                if font_current_color /= TRANSPARENT_COLOR then
+                    out_write_pixel <= '1';
+                    out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
+                else
+                    out_write_pixel <= '0';
                 end if;
             when WRITE_BLOCK_PIXEL_STATE =>
                 if block_current_color /= TRANSPARENT_COLOR then
@@ -236,6 +265,8 @@ begin
 
                 current_player_nb <= 0;
             else
+                time_remaining <= in_time_remaining;
+                
                 case current_state is
                     when START_STATE =>
                         -- Variables reinitialisation
@@ -303,29 +334,31 @@ begin
                             current_grid_position <= DEFAULT_GRID_POSITION;
                             current_font_position <= DEFAULT_FONT_POSITION;
 
-                            current_state <= WAIT_BLOCK_STATE;
+                            current_state <= GAME_TRANSITION_STATE;
                         else
                             current_font_position <= DEFAULT_FONT_POSITION;
                             current_grid_position.j <= current_grid_position.j + 1;
                             
-                            case current_grid_position.j
+                            case current_grid_position.j is
                                 when GRID_COLS - 2 =>
-                                    current_timer_nb <= in_time_remaining / 60;
+                                    current_timer_nb <= SELECT_FONT((time_remaining / (1000)) mod 10);
                                     current_state <= WAIT_BOTTOM_CHARACTER_STATE;
                                 when GRID_COLS - 3 =>
-                                    current_timer_nb <= in_time_remaining / 60;
+                                    current_timer_nb <= SELECT_FONT((time_remaining / (1000 * 10)) mod 10);
                                     current_state <= WAIT_BOTTOM_CHARACTER_STATE;
                                 when GRID_COLS - 4 =>
                                     current_timer_nb <= 10;
                                     current_state <= WAIT_BOTTOM_CHARACTER_STATE;
                                 when GRID_COLS - 5 =>
-                                    current_timer_nb <= 10;
+                                    current_timer_nb <= SELECT_FONT((time_remaining / (1000 * 60)) mod 10);
                                     current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                                when others => 
+                                    current_timer_nb <= 0;
+                                    current_state <= ROTATE_BOTTOM_TIME_STATE;
+                            end case;
                         end if;
                     when WAIT_BOTTOM_TIME_STATE =>
                         waiting_clocks := waiting_clocks - 1;
-                        
-                        current_player_status <= in_player_status;
                         
                         if waiting_clocks = 0 then
                             waiting_clocks := 2;
@@ -352,6 +385,8 @@ begin
                     ----------------------------------------------
                     -- GRID
                     ----------------------------------------------
+                    when GAME_TRANSITION_STATE =>
+                        current_state <= WAIT_CHARACTER_STATE;
                     when ROTATE_BLOCK_STATE =>
                         current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
                         current_block_position <= DEFAULT_BLOCK_POSITION;
