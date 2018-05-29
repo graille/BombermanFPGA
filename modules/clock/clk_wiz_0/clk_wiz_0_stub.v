@@ -1,10 +1,9 @@
 // Copyright 1986-2017 Xilinx, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2017.2 (lin64) Build 1909853 Thu Jun 15 18:39:10 MDT 2017
-// Date        : Fri May 25 11:05:37 2018
-// Host        : k2-123-test running 64-bit Ubuntu 16.04.3 LTS
-// Command     : write_verilog -force -mode synth_stub -rename_top clk_wiz_0 -prefix
-//               clk_wiz_0_ clk_wiz_0_stub.v
+// Date        : Tue May 29 15:18:05 2018
+// Host        : k2-123-test running 64-bit Ubuntu 16.04.4 LTS
+// Command     : write_verilog -force -mode synth_stub /home/orcad/BombermanFPGA/modules/clock/clk_wiz_0/clk_wiz_0_stub.v
 // Design      : clk_wiz_0
 // Purpose     : Stub declaration of top-level module interface
 // Device      : xc7a100tcsg324-1

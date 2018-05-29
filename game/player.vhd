@@ -14,7 +14,7 @@ entity player is
     port(
         clk, rst : in std_logic;
         in_millisecond : in millisecond_count;
-        --in_io : in io_signal;
+        in_io : in io_signal;
         in_dol : in dol_type;
 
         in_next_block : in block_type;
@@ -32,9 +32,9 @@ end player;
 
 architecture behavioral of player is
     constant PLAYER_INITIAL_POSITION : vector := (0,0);
-    constant DEFAULT_SPEED : integer := 1;
+    constant DEFAULT_SPEED : integer := 2;
 
-    signal in_io : io_signal := x"1D"; 
+    --signal in_io : io_signal := x"1D"; 
 
     -- Functions
     function INIT_PLAYER_POSITION

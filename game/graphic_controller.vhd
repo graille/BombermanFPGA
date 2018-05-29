@@ -42,10 +42,10 @@ architecture behavioral of graphic_controller is
         WRITE_BOTTOM_CHARACTER_PIXEL_STATE,
 
         -- Write bottom timer
-        ROTATE_BOTTOM_TIME_STATE,
-        WAIT_BOTTOM_TIME_STATE,
-        WAIT_BOTTOM_TIME_PIXEL_STATE,
-        WRITE_BOTTOM_TIME_PIXEL_STATE,
+        ROTATE_BOTTOM_TIMER_STATE,
+        WAIT_BOTTOM_TIMER_STATE,
+        WAIT_BOTTOM_TIMER_PIXEL_STATE,
+        WRITE_BOTTOM_TIMER_PIXEL_STATE,
         
         GAME_TRANSITION_STATE,
 
@@ -66,9 +66,8 @@ architecture behavioral of graphic_controller is
         WAIT_NUMBER_PIXEL_STATE,
         WRITE_TIME_REMAINING_STATE,
 
-        -- Test state
-        TEST,
-        STOP_STATE
+        -- Others
+        END_STATE
     );
 
     type block_position_type is record
@@ -148,6 +147,9 @@ architecture behavioral of graphic_controller is
     signal time_remaining : millisecond_count := 0;
     
     signal font_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '0');
+    
+    -- State
+    signal first_passage_done : std_logic := '0';
 begin
     -- This ROM contains all blocks sprites
     RESSOURCES_ROM_INSTANCE:entity work.ressources_sprite_rom
@@ -210,12 +212,13 @@ begin
                         out_pixel_value <= std_logic_vector(to_unsigned(12, COLOR_BIT_PRECISION));
                     end if;
                 end if;
-            when WRITE_BOTTOM_TIME_PIXEL_STATE =>
+            when WRITE_BOTTOM_TIMER_PIXEL_STATE =>
                 if font_current_color /= TRANSPARENT_COLOR then
                     out_write_pixel <= '1';
                     out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
                 else
-                    out_write_pixel <= '0';
+                    out_write_pixel <= '1';
+                    out_pixel_value <= std_logic_vector(to_unsigned(0, COLOR_BIT_PRECISION));
                 end if;
             when WRITE_BLOCK_PIXEL_STATE =>
                 if block_current_color /= TRANSPARENT_COLOR then
@@ -265,7 +268,7 @@ begin
 
                 current_player_nb <= 0;
             else
-                time_remaining <= in_time_remaining;
+                time_remaining <= in_time_remaining / 1000;
                 
                 case current_state is
                     when START_STATE =>
@@ -292,7 +295,7 @@ begin
                             
                             current_player_nb <= 0;
                             
-                            current_state <= WAIT_CHARACTER_STATE;
+                            current_state <= ROTATE_BOTTOM_TIMER_STATE;
                         else
                             current_character_position <= DEFAULT_CHARACTER_POSITION;
                             current_grid_position.j <= current_grid_position.j + 1;
@@ -329,7 +332,7 @@ begin
                             current_state <= WAIT_BOTTOM_CHARACTER_PIXEL_STATE;
                         end if;
                       
-                    when ROTATE_BOTTOM_TIME_STATE =>
+                    when ROTATE_BOTTOM_TIMER_STATE =>
                         if current_grid_position.j = GRID_COLS - 1 then
                             current_grid_position <= DEFAULT_GRID_POSITION;
                             current_font_position <= DEFAULT_FONT_POSITION;
@@ -338,55 +341,56 @@ begin
                         else
                             current_font_position <= DEFAULT_FONT_POSITION;
                             current_grid_position.j <= current_grid_position.j + 1;
+                            current_grid_position.i <= GRID_ROWS;
                             
                             case current_grid_position.j is
                                 when GRID_COLS - 2 =>
-                                    current_timer_nb <= SELECT_FONT((time_remaining / (1000)) mod 10);
-                                    current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                                    current_timer_nb <= SELECT_FONT(time_remaining mod 10);
+                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when GRID_COLS - 3 =>
-                                    current_timer_nb <= SELECT_FONT((time_remaining / (1000 * 10)) mod 10);
-                                    current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                                    current_timer_nb <= SELECT_FONT((time_remaining / 10) mod 10);
+                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when GRID_COLS - 4 =>
                                     current_timer_nb <= 10;
-                                    current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when GRID_COLS - 5 =>
-                                    current_timer_nb <= SELECT_FONT((time_remaining / (1000 * 60)) mod 10);
-                                    current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                                    current_timer_nb <= SELECT_FONT((time_remaining / 60) mod 10);
+                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
                                 when others => 
                                     current_timer_nb <= 0;
-                                    current_state <= ROTATE_BOTTOM_TIME_STATE;
+                                    current_state <= ROTATE_BOTTOM_TIMER_STATE;
                             end case;
                         end if;
-                    when WAIT_BOTTOM_TIME_STATE =>
+                    when WAIT_BOTTOM_TIMER_STATE =>
                         waiting_clocks := waiting_clocks - 1;
                         
                         if waiting_clocks = 0 then
                             waiting_clocks := 2;
-                            current_state <= WAIT_BOTTOM_TIME_PIXEL_STATE;
+                            current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                         else
-                            current_state <= WAIT_BOTTOM_TIME_STATE;
+                            current_state <= WAIT_BOTTOM_TIMER_STATE;
                         end if;
-                    when WAIT_BOTTOM_TIME_PIXEL_STATE =>
+                    when WAIT_BOTTOM_TIMER_PIXEL_STATE =>
                         current_pixel_position.Y <= (current_grid_position.j * FONT_GRAPHIC_WIDTH) + current_font_position.Y;
                         current_pixel_position.X <= (GRID_ROWS * FONT_GRAPHIC_HEIGHT) + current_font_position.X;
                         
-                        current_state <= WRITE_BOTTOM_TIME_PIXEL_STATE;
-                    when WRITE_BOTTOM_TIME_PIXEL_STATE =>
+                        current_state <= WRITE_BOTTOM_TIMER_PIXEL_STATE;
+                    when WRITE_BOTTOM_TIMER_PIXEL_STATE =>
                         -- Update state
                         if current_font_position = DEFAULT_LAST_FONT_POSITION then
-                            current_state <= ROTATE_BOTTOM_TIME_STATE;
+                            current_state <= ROTATE_BOTTOM_TIMER_STATE;
                         elsif current_font_position.Y = 0 then
                             current_font_position <= (current_font_position.X - 1, CHARACTER_GRAPHIC_WIDTH - 1);
-                            current_state <= WAIT_BOTTOM_TIME_PIXEL_STATE;
+                            current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                         else
                             current_font_position <= (current_font_position.X, current_font_position.Y - 1);
-                            current_state <= WAIT_BOTTOM_TIME_PIXEL_STATE;
+                            current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                         end if;
                     ----------------------------------------------
                     -- GRID
                     ----------------------------------------------
                     when GAME_TRANSITION_STATE =>
-                        current_state <= WAIT_CHARACTER_STATE;
+                        current_state <= WAIT_BLOCK_STATE;
                     when ROTATE_BLOCK_STATE =>
                         current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
                         current_block_position <= DEFAULT_BLOCK_POSITION;
@@ -410,7 +414,11 @@ begin
                         current_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
                         current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
                     
-                        current_state <= WRITE_BLOCK_PIXEL_STATE;
+                        if current_block.category != EMPTY_BLOCK then
+                            current_state <= WRITE_BLOCK_PIXEL_STATE;
+                        else 
+                            current_state <= ROTATE_BLOCK_STATE;
+                        end if;
                     when WRITE_BLOCK_PIXEL_STATE =>
                         -- Update state
                         if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
@@ -430,7 +438,7 @@ begin
                         current_character_position <= DEFAULT_CHARACTER_POSITION;
 
                         if current_player_nb = NB_PLAYERS - 1 then
-                            current_state <= START_STATE;
+                            current_state <= END_STATE;
                         else
                             current_state <= WAIT_CHARACTER_STATE;
                         end if;
@@ -462,6 +470,9 @@ begin
                             current_character_position <= (current_character_position.X, current_character_position.Y - 1);
                             current_state <= WAIT_CHARACTER_PIXEL_STATE;
                         end if;
+                    when END_STATE =>
+                        first_passage_done <= '1';
+                        current_state <= START_STATE;
                     when others => null;
                 end case;
             end if;

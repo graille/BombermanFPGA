@@ -8,7 +8,7 @@ use work.PROJECT_BLOCKS_PKG.all;
 
 entity GAME_TOP is
     generic (
-        FREQUENCY: integer := 100000000;
+        FREQUENCY: integer := 70000000;
         NB_SWITCH : integer := 16
     );
     port (
@@ -40,7 +40,7 @@ entity GAME_TOP is
 end GAME_TOP;
 
 architecture behavioral of GAME_TOP is
-    signal CLK : std_logic := '0';
+    signal CLK, REAL_RST : std_logic := '0';
 
     -- Signals
     signal current_block : block_type;
@@ -116,12 +116,13 @@ architecture behavioral of GAME_TOP is
     );
     end component;
 begin
-    LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
-        LED(K * 4) <= '1' when next_io = CONTROLS_CONTAINER(0)(K) else '0';
-        LED(K * 4 + 1) <= '1' when next_io = CONTROLS_CONTAINER(1)(K) else '0';
-        LED(K * 4 + 2) <= '1' when keyboard_output(7 downto 0) = CONTROLS_CONTAINER(2)(K) else '0';
-        LED(K * 4 + 3) <= '1' when keyboard_output(7 downto 0) = CONTROLS_CONTAINER(3)(K) else '0';
-    end generate;
+--    LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
+--        LED(K * 4) <= '1' when next_io = CONTROLS_CONTAINER(0)(K) else '0';
+--        LED(K * 4 + 1) <= '1' when next_io = CONTROLS_CONTAINER(1)(K) else '0';
+--        LED(K * 4 + 2) <= '1' when keyboard_output(7 downto 0) = CONTROLS_CONTAINER(2)(K) else '0';
+--        LED(K * 4 + 3) <= '1' when keyboard_output(7 downto 0) = CONTROLS_CONTAINER(3)(K) else '0';
+--    end generate;
+    REAL_RST <= not(RST);
 
     CLK_DIV : clk_wiz_0
     port map (
@@ -141,7 +142,7 @@ begin
     )
     port map (
         CLK => CLK,
-        RST         => RST,
+        RST         => REAL_RST,
 
         in_command  => keyboard_output(15 downto 0),
         out_command => next_io
@@ -168,7 +169,7 @@ begin
     )
     port map (
         clk               => clk,
-        rst               => rst,
+        rst               => REAL_RST,
 
         in_seed           => SW,
 
@@ -206,7 +207,7 @@ begin
     I_GRAPHIC_CONTROLLER: entity work.graphic_controller
     port map (
         CLK                  => CLK,
-        RST                  => RST,
+        RST                  => REAL_RST,
 
         in_block             => gc_in_block,
         out_request_pos      => gc_out_request_pos,
