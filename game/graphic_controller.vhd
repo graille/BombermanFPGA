@@ -414,10 +414,10 @@ begin
                         current_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
                         current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
                     
-                        if current_block.category != EMPTY_BLOCK then
-                            current_state <= WRITE_BLOCK_PIXEL_STATE;
-                        else 
+                        if current_block.category /= EMPTY_BLOCK and first_passage_done = '1' then
                             current_state <= ROTATE_BLOCK_STATE;
+                        else 
+                            current_state <= WRITE_BLOCK_PIXEL_STATE;
                         end if;
                     when WRITE_BLOCK_PIXEL_STATE =>
                         -- Update state
