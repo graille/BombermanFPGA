@@ -116,6 +116,8 @@ architecture behavioral of GAME_TOP is
     );
     end component;
 begin
+    REAL_RST <= not(RST);
+    
     CLK_DIV : clk_wiz_0
     port map (
         CLK_IN1 => CLK100,
