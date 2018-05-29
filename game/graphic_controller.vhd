@@ -43,7 +43,6 @@ architecture behavioral of graphic_controller is
 
         -- Write bottom timer
         ROTATE_BOTTOM_TIMER_STATE,
-        WAIT_BOTTOM_TIMER_STATE,
         WAIT_BOTTOM_TIMER_PIXEL_STATE,
         WRITE_BOTTOM_TIMER_PIXEL_STATE,
         
@@ -325,29 +324,20 @@ begin
                             case current_grid_position.j is
                                 when GRID_COLS - 2 =>
                                     current_timer_nb <= 16 + (time_remaining mod 10);
-                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
+                                    current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 3 =>
                                     current_timer_nb <= 16 + ((time_remaining / 10) mod 10);
-                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
+                                    current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 4 =>
                                     current_timer_nb <= (10) + 16;
-                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
+                                    current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 5 =>
                                     current_timer_nb <= 16 + ((time_remaining / 60) mod 10);
-                                    current_state <= WAIT_BOTTOM_TIMER_STATE;
+                                    current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when others => 
                                     current_timer_nb <= 0;
                                     current_state <= ROTATE_BOTTOM_TIMER_STATE;
                             end case;
-                        end if;
-                    when WAIT_BOTTOM_TIMER_STATE =>
-                        waiting_clocks := waiting_clocks - 1;
-                        
-                        if waiting_clocks = 0 then
-                            waiting_clocks := 2;
-                            current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
-                        else
-                            current_state <= WAIT_BOTTOM_TIMER_STATE;
                         end if;
                     when WAIT_BOTTOM_TIMER_PIXEL_STATE =>
                         current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_font_position.Y;
