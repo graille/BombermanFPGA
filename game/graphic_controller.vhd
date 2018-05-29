@@ -121,7 +121,7 @@ architecture behavioral of graphic_controller is
     
     -- Timer
     signal current_font_position : font_position_type := DEFAULT_FONT_POSITION;
-    signal current_timer_nb : integer range 0 to 15 := 0;
+    signal current_timer_nb : integer range 0 to 127 := 0;
     signal time_remaining : millisecond_count := 0;
     
     signal font_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '0');
@@ -321,7 +321,6 @@ begin
                         else
                             current_font_position <= DEFAULT_FONT_POSITION;
                             current_grid_position.j <= current_grid_position.j + 1;
-                            current_grid_position.i <= GRID_ROWS;
                             
                             case current_grid_position.j is
                                 when GRID_COLS - 2 =>
