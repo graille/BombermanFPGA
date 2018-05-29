@@ -8,7 +8,7 @@ use work.PROJECT_BLOCKS_PKG.all;
 
 entity GAME_TOP is
     generic (
-        FREQUENCY: integer := 70000000;
+        FREQUENCY: integer := 70_000_000;
         NB_SWITCH : integer := 16
     );
     port (
@@ -85,7 +85,8 @@ architecture behavioral of GAME_TOP is
     signal VGA_VS_O_t : STD_LOGIC;
 
     -- I/O
-    signal keyboard_output : std_logic_vector(31 downto 0);
+    signal keyboard_output : std_logic_vector(7 downto 0);
+    signal keyboard_output_new : std_logic := '0';
     signal next_io : io_signal;
 
 
@@ -93,19 +94,32 @@ architecture behavioral of GAME_TOP is
     signal COLOR_R, COLOR_G, COLOR_B: STD_LOGIC_VECTOR (7 downto 0);
 
     -- Component
-    component keyboard_top
-    port(
-        CLK100MHZ : in std_logic;
-        PS2_CLK : in std_logic;
-        PS2_DATA : in std_logic;
+--    component keyboard_top
+--    port(
+--        CLK100MHZ : in std_logic;
+--        PS2_CLK : in std_logic;
+--        PS2_DATA : in std_logic;
 
-        SEG : out std_logic_vector(6 downto 0);
-        AN : out std_logic_vector(7 downto 0);
-        out_keycode : out std_logic_vector(31 downto 0);
-        DP : out std_logic;
-        UART_TXD : out std_logic
-    );
-    end component;
+--        SEG : out std_logic_vector(6 downto 0);
+--        AN : out std_logic_vector(7 downto 0);
+--        out_keycode : out std_logic_vector(31 downto 0);
+--        DP : out std_logic;
+--        UART_TXD : out std_logic
+--    );
+--    end component;
+    component ps2_keyboard IS
+        GENERIC(
+            clk_freq              : INTEGER;
+            debounce_counter_size : INTEGER
+        );      
+        PORT(
+            clk          : IN  STD_LOGIC;             
+            ps2_clk      : IN  STD_LOGIC;          
+            ps2_data     : IN  STD_LOGIC;          
+            ps2_code_new : OUT STD_LOGIC;                     
+            ps2_code     : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+        ); 
+    END component;
 
     component clk_wiz_0
     port (
@@ -132,25 +146,26 @@ begin
 
     I_IO_CONTROLLER : entity work.io_controller
     port map (
-        CLK => CLK,
+        CLK     => CLK,
         RST         => REAL_RST,
 
-        in_command  => keyboard_output(15 downto 0),
+        in_command  => keyboard_output,
+        in_new_command => keyboard_output_new,
         out_command => next_io
     );
 
-    I_KEYBOARD:keyboard_top
+    I_KEYBOARD:ps2_keyboard
+    generic map (
+        clk_freq => FREQUENCY,
+        debounce_counter_size => 9
+    )
     port map (
-        CLK100MHZ => CLK_KEYBOARD,
+        CLK => CLK,
         PS2_CLK => PS2_CLK,
         PS2_DATA => PS2_DATA,
-
-        SEG => SEG,
-        AN => AN,
-        out_keycode => keyboard_output,
-
-        DP => DP,
-        UART_TXD => UART_TXD
+        
+        ps2_code => keyboard_output,
+        ps2_code_new => keyboard_output_new
     );
 
     I_GAME_CONTROLLER: entity work.game_controller
