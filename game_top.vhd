@@ -114,12 +114,12 @@ architecture behavioral of GAME_TOP is
     );
     end component;
 begin
---    LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
---        LED(K * 4) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_FORWARD(K) else '0';
---        LED(K * 4 + 1) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_LEFT(K) else '0';
---        LED(K * 4 + 2) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_BACK(K) else '0';
---        LED(K * 4 + 3) <= '1' when keyboard_output(7 downto 0) = CONTROL_SET_RIGHT(K) else '0';
---    end generate;
+    LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
+        LED(K * 4) <= '1' when next_io = CONTROLS_CONTAINER(0)(K) else '0';
+        LED(K * 4 + 1) <= '1' when next_io = CONTROLS_CONTAINER(1)(K) else '0';
+        LED(K * 4 + 2) <= '1' when next_io = CONTROLS_CONTAINER(2)(K) else '0';
+        LED(K * 4 + 3) <= '1' when next_io = CONTROLS_CONTAINER(3)(K) else '0';
+    end generate;
 
     CLK_DIV : clk_wiz_0
     port map (
@@ -131,7 +131,7 @@ begin
     );
 
     -- I/O
-    LED <= SW;
+    --LED <= SW;
 
     I_IO_CONTROLLER : entity work.io_controller
     generic map (

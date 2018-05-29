@@ -26,6 +26,10 @@ architecture behavioral of io_controller is
     signal millisecond_container : commands_time_container_type := (others => (others => 0));
     signal millisecond : millisecond_count := 0;
     
+    type clk_count_array_type is array(0 to NB_PLAYERS - 1) of integer range 0 to (CONTROLS_CONTAINER'length * NB_PLAYERS) - 1;
+    type clk_count_container_type is array(0 to 4) of commands_time_array_type;
+    signal time_remaining : clk_count_container_type := (others => (others => 0));
+    
     type controls_status_type is array(CONTROLS_CONTAINER'length - 1 downto 0) of std_logic_vector(NB_PLAYERS - 1 downto 0);
     
     signal controls_status : controls_status_type := (others => (others => '0'));
@@ -53,56 +57,50 @@ begin
         end if;
     end process;
     
-    COMMAND_ASSIGNATOR:for K in 0 to CONTROLS_CONTAINER'length - 1 generate
-        PLAYER_ASSIGNATION:for N in 0 to NB_PLAYERS - 1 generate
-            process(clk)
-                variable diff_var : millisecond_count;
-            begin
-                if rising_edge(clk) then
-                    if RST = '1' then
-                        controls_status(K)(N) <= '0';
-                        controls_active(K)(N) <= '0';
-                        millisecond_container(K)(N) <= 0;
-                    else
+
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if RST = '1' then
+                controls_status <= (others => (others => '0'));
+                controls_active <= (others => (others => '0'));
+                millisecond_container <= (others => (others => 0));
+                
+                current_command <= 0; 
+                current_player <= 0;
+            else
+                -- Check and update each commands
+                for K in 0 to CONTROLS_CONTAINER'length - 1 loop
+                    for N in 0 to NB_PLAYERS - 1 loop
                         if command_reg(7 downto 0) = CONTROLS_CONTAINER(K)(N) then
                             if command_reg(15 downto 8) = x"F0" then
                                 controls_status(K)(N) <= '0';
                             else
-                                controls_status(K)(N) <= '1';
-                                millisecond_container(K)(N) <= millisecond;
+                                if controls_status(K)(N) /= '1' then
+                                    controls_status(K)(N) <= '1';
+                                    millisecond_container(K)(N) <= millisecond;
+                                end if;
                             end if;
                         end if;
                         
-                        diff_var := (millisecond - millisecond_container(K)(N));
-                        
-                        if diff_var > 10 then
-                            controls_active(K)(N) <= '1';
-                            millisecond_container(K)(N) <= millisecond;
+                        -- Update
+                        if (millisecond - millisecond_container(K)(N)) >= 10 then
+                            if controls_status(K)(N) = '1' then
+                                controls_active(K)(N) <= '1';
+                                millisecond_container(K)(N) <= millisecond;
+                                time_remaining(K)(N) <= CONTROLS_CONTAINER'length * NB_PLAYERS;
+                            end if;
                         else
-                            controls_active(K)(N) <= '0';
+                            if time_remaining(K)(N) = 0 and controls_active(K)(N) = '1' then
+                                controls_active(K)(N) <= '0';
+                            else
+                                time_remaining(K)(N) <= time_remaining(K)(N) - 1;
+                            end if;
                         end if;
-                    end if;
-                end if;
-            end process;
-        end generate;
-    end generate;   
-        
-    process(controls_status, current_command, current_player)
-    begin
-        if (controls_status(current_command)(current_player) and controls_active(current_command)(current_player)) = '1' then
-            out_command <= CONTROLS_CONTAINER(current_command)(current_player);
-        else
-            out_command <= x"00";
-        end if;
-    end process;
-        
-    process(clk)
-    begin
-        if rising_edge(clk) then
-            if rst = '1' then
-                current_command <= 0;
-                current_player <= 0;
-            else
+                    end loop;
+                end loop;  
+                
+                -- Rotate current command
                 if current_command = (CONTROLS_CONTAINER'length - 1) and current_player = (NB_PLAYERS - 1) then
                     current_command <= 0;
                     current_player <= 0;
@@ -113,6 +111,16 @@ begin
                     current_player <= current_player + 1;
                 end if;
             end if;
+        end if;
+    end process;
+ 
+    -- Output multiplexer
+    process(controls_status, controls_active, current_command, current_player)
+    begin
+        if (controls_status(current_command)(current_player) and controls_active(current_command)(current_player)) = '1' then
+            out_command <= CONTROLS_CONTAINER(current_command)(current_player);
+        else
+            out_command <= x"00";
         end if;
     end process;
 end behavioral;
