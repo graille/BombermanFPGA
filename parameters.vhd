@@ -45,6 +45,9 @@ package PROJECT_PARAMS_PKG is
     constant CHARACTER_GRAPHIC_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
     constant CHARACTER_GRAPHIC_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
 
+    constant FONT_GRAPHIC_HEIGHT : integer := 40;
+    constant FONT_GRAPHIC_WIDTH : integer := 30;
+
     -- O-----> Y axis
     -- |
     -- |

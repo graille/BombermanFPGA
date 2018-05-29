@@ -14,7 +14,7 @@ entity player is
     port(
         clk, rst : in std_logic;
         in_millisecond : in millisecond_count;
-        in_io : in io_signal;
+        --in_io : in io_signal;
         in_dol : in dol_type;
 
         in_next_block : in block_type;
@@ -34,6 +34,8 @@ architecture behavioral of player is
     constant PLAYER_INITIAL_POSITION : vector := (0,0);
     constant DEFAULT_SPEED : integer := 1;
 
+    signal in_io : io_signal := x"1D"; 
+
     -- Functions
     function INIT_PLAYER_POSITION
         return vector is
@@ -42,20 +44,35 @@ architecture behavioral of player is
         case K is
             when 0 => grid_reset_position := (1, 1);
             when 1 => grid_reset_position := (1, GRID_COLS - 2);
-            when 2 => grid_reset_position := (GRID_ROWS - 3, 1);
-            when 3 => grid_reset_position := (GRID_ROWS - 3, GRID_COLS - 2);
+            when 2 => grid_reset_position := (GRID_ROWS - 2, 1);
+            when 3 => grid_reset_position := (GRID_ROWS - 2, GRID_COLS - 2);
             when others => grid_reset_position := (2, 2);
         end case;
                 
-        return (grid_reset_position.i * (VECTOR_PRECISION_X / GRID_ROWS), grid_reset_position.j * (VECTOR_PRECISION_Y / GRID_COLS));
+        return (grid_reset_position.i * (VECTOR_PRECISION_X / (GRID_ROWS + 1)), grid_reset_position.j * (VECTOR_PRECISION_Y / GRID_COLS));
     end INIT_PLAYER_POSITION;
+
+    function INIT_PLAYER_DIRECTION
+        return direction_type is
+        variable direction : direction_type := D_DOWN;
+    begin
+        case K is
+            when 0 => direction := D_DOWN;
+            when 1 => direction := D_DOWN;
+            when 2 => direction := D_UP;
+            when 3 => direction := D_UP;
+            when others => direction := D_DOWN;
+        end case;
+                
+        return direction;
+    end INIT_PLAYER_DIRECTION;
 
     -- Players states
     signal player_alive : std_logic := '1'; -- 1 = alive, 0 = dead
 
     -- Players informations
     signal player_position : vector := INIT_PLAYER_POSITION;
-    signal player_speed : integer range 0 to 2**12 - 1;
+    signal player_speed : integer range 0 to 2**6 - 1;
     signal player_power : integer range 0 to MAX_PLAYER_POWER := 1;
 
     signal player_max_bombs : integer range 0 to 31 := 1;
@@ -72,13 +89,14 @@ architecture behavioral of player is
 
     signal player_id : character_id_type := K;
     signal player_state : state_type := 0;
-    signal player_direction : direction_type := D_DOWN;
+    signal player_direction : direction_type := INIT_PLAYER_DIRECTION;
 
     -- Commands
+    signal last_command_update : millisecond_count := 0;
     constant CONTROL_FORWARD : io_signal := CONTROLS_CONTAINER(0)(K);
-    constant CONTROL_BACK : io_signal := CONTROLS_CONTAINER(1)(K);
-    constant CONTROL_LEFT : io_signal := CONTROLS_CONTAINER(2)(K);
-    constant CONTROL_RIGHT : io_signal := CONTROLS_CONTAINER(3)(K);
+    constant CONTROL_BACK : io_signal := CONTROLS_CONTAINER(2)(K);
+    constant CONTROL_LEFT : io_signal := CONTROLS_CONTAINER(3)(K);
+    constant CONTROL_RIGHT : io_signal := CONTROLS_CONTAINER(1)(K);
 
     constant CONTROL_BOMB : io_signal := CONTROLS_CONTAINER(4)(K);
 begin
@@ -127,8 +145,8 @@ begin
 
                             player_lives <= player_lives - 1;
                         when BONUS_SPEED_BLOCK => -- Speed Bonus
-                            if player_speed < 100 then
-                                player_speed <= player_speed * 2;
+                            if player_speed < 10 then
+                                player_speed <= player_speed + 1;
                             end if;
                         when BONUS_ADD_POWER_BLOCK => -- Power Bonus
                             if player_power < 15 then
@@ -176,8 +194,11 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 player_position <= INIT_PLAYER_POSITION;
+                player_direction <= INIT_PLAYER_DIRECTION;
                 player_nb_bombs <= 0;
                 player_id <= (player_id + 1) mod 7;
+                
+                last_command_update <= 0;
             else
                 out_action <= EMPTY_PLAYER_ACTION;
 
@@ -191,30 +212,38 @@ begin
                 end case;
 
                 -- Update position
-                case in_io is
-                    when CONTROL_FORWARD =>
-                        if in_dol(D_UP) = '1' or player_wall_hack = '1' then
-                            player_position.X <= player_position.X - real_speed;
-                        end if;
-                    when CONTROL_BACK =>
-                        if in_dol(D_DOWN) = '1' or player_wall_hack = '1' then
-                            player_position.X <= player_position.X + real_speed;
-                        end if;
-                    when CONTROL_LEFT =>
-                        if in_dol(D_LEFT) = '1' or player_wall_hack = '1' then
-                            player_position.Y <= player_position.Y - real_speed;
-                        end if;
-                    when CONTROL_RIGHT =>
-                        if in_dol(D_RIGHT) = '1' or player_wall_hack = '1' then
-                            player_position.Y <= player_position.Y + real_speed;
-                        end if;
-                    when CONTROL_BOMB =>
-                        if (player_nb_bombs < player_max_bombs) and (player_can_plant_bomb = '1') then
-                            player_nb_bombs <= player_nb_bombs + 1;
-                            out_action <= (PLANT_NORMAL_BOMB, in_millisecond);
-                        end if;
-                    when others => null;
-                end case;
+                if (in_millisecond - last_command_update) >= 3 then
+                    last_command_update <= in_millisecond;
+                    case in_io is
+                        when CONTROL_FORWARD =>
+                            if in_dol(D_UP) = '1' or player_wall_hack = '1' then
+                                player_position.X <= (player_position.X - real_speed) mod VECTOR_PRECISION_X;
+                            end if;
+                            player_direction <= D_UP;
+                            
+                        when CONTROL_BACK =>
+                            if in_dol(D_DOWN) = '1' or player_wall_hack = '1' then
+                                player_position.X <= (player_position.X + real_speed) mod VECTOR_PRECISION_X;
+                            end if;
+                            player_direction <= D_DOWN;
+                        when CONTROL_LEFT =>
+                            if in_dol(D_LEFT) = '1' or player_wall_hack = '1' then
+                                player_position.Y <= (player_position.Y - real_speed) mod VECTOR_PRECISION_Y;
+                            end if;
+                            player_direction <= D_LEFT;
+                        when CONTROL_RIGHT =>
+                            if in_dol(D_RIGHT) = '1' or player_wall_hack = '1' then
+                                player_position.Y <= (player_position.Y + real_speed) mod VECTOR_PRECISION_Y;
+                            end if;
+                            player_direction <= D_RIGHT;
+                        when CONTROL_BOMB =>
+                            if (player_nb_bombs < player_max_bombs) and (player_can_plant_bomb = '1') then
+                                player_nb_bombs <= player_nb_bombs + 1;
+                                out_action <= (PLANT_NORMAL_BOMB, in_millisecond);
+                            end if;
+                        when others => null;
+                    end case;
+                end if;
             end if;
         end if;
     end process;

@@ -21,34 +21,34 @@ entity io_controller is
 end io_controller;
 
 architecture behavioral of io_controller is
-    type commands_time_array_type is array(0 to NB_PLAYERS - 1) of millisecond_count;
-    type commands_time_container_type is array(0 to 4) of commands_time_array_type;
-    signal millisecond_container : commands_time_container_type := (others => (others => 0));
-    signal millisecond : millisecond_count := 0;
+--    type commands_time_array_type is array(0 to NB_PLAYERS - 1) of millisecond_count;
+--    type commands_time_container_type is array(0 to 4) of commands_time_array_type;
+--    signal millisecond_container : commands_time_container_type := (others => (others => 0));
+--    signal millisecond : millisecond_count := 0;
     
-    type clk_count_array_type is array(0 to NB_PLAYERS - 1) of integer range 0 to (CONTROLS_CONTAINER'length * NB_PLAYERS) - 1;
-    type clk_count_container_type is array(0 to 4) of commands_time_array_type;
-    signal time_remaining : clk_count_container_type := (others => (others => 0));
+--    type clk_count_array_type is array(0 to NB_PLAYERS - 1) of integer range 0 to (CONTROLS_CONTAINER'length * NB_PLAYERS) - 1;
+--    type clk_count_container_type is array(0 to 4) of commands_time_array_type;
+--    signal time_remaining : clk_count_container_type := (others => (others => 0));
     
     type controls_status_type is array(CONTROLS_CONTAINER'length - 1 downto 0) of std_logic_vector(NB_PLAYERS - 1 downto 0);
     
     signal controls_status : controls_status_type := (others => (others => '0'));
-    signal controls_active : controls_status_type := (others => (others => '0'));
+--    signal controls_active : controls_status_type := (others => (others => '0'));
     
     signal current_command : integer range 0 to CONTROLS_CONTAINER'length - 1 := 0;
     signal current_player : integer range 0 to NB_PLAYERS - 1 := 0;
-    
+
     signal command_reg : std_logic_vector(15 downto 0) := (others => '0');
 begin
-    COUNTER_ENGINE:entity work.millisecond_counter
-    generic map (
-        FREQUENCY => FREQUENCY
-    )
-    port map (
-        CLK => CLK,
-        RST => RST,
-        timer => millisecond
-    );
+--    COUNTER_ENGINE:entity work.millisecond_counter
+--    generic map (
+--        FREQUENCY => FREQUENCY
+--    )
+--    port map (
+--        CLK => CLK,
+--        RST => RST,
+--        timer => millisecond
+--    );
     
     process(clk)
     begin
@@ -63,8 +63,8 @@ begin
         if rising_edge(clk) then
             if RST = '1' then
                 controls_status <= (others => (others => '0'));
-                controls_active <= (others => (others => '0'));
-                millisecond_container <= (others => (others => 0));
+--                controls_active <= (others => (others => '0'));
+--                millisecond_container <= (others => (others => 0));
                 
                 current_command <= 0; 
                 current_player <= 0;
@@ -76,31 +76,32 @@ begin
                             if command_reg(15 downto 8) = x"F0" then
                                 controls_status(K)(N) <= '0';
                             else
-                                if controls_status(K)(N) /= '1' then
+--                                if controls_status(K)(N) /= '1' then
                                     controls_status(K)(N) <= '1';
-                                    millisecond_container(K)(N) <= millisecond;
-                                end if;
+--                                    millisecond_container(K)(N) <= millisecond;
+--                                end if;
                             end if;
                         end if;
                         
                         -- Update
-                        if (millisecond - millisecond_container(K)(N)) >= 10 then
-                            if controls_status(K)(N) = '1' then
-                                controls_active(K)(N) <= '1';
-                                millisecond_container(K)(N) <= millisecond;
-                                time_remaining(K)(N) <= CONTROLS_CONTAINER'length * NB_PLAYERS;
-                            end if;
-                        else
-                            if time_remaining(K)(N) = 0 and controls_active(K)(N) = '1' then
-                                controls_active(K)(N) <= '0';
-                            else
-                                time_remaining(K)(N) <= time_remaining(K)(N) - 1;
-                            end if;
-                        end if;
+--                        if (millisecond - millisecond_container(K)(N)) >= 10 then
+--                            if controls_status(K)(N) = '1' then
+--                                controls_active(K)(N) <= '1';
+--                                millisecond_container(K)(N) <= millisecond;
+--                                time_remaining(K)(N) <= CONTROLS_CONTAINER'length * NB_PLAYERS;
+--                            end if;
+--                        else
+--                            if time_remaining(K)(N) = 0 and controls_active(K)(N) = '1' then
+--                                controls_active(K)(N) <= '0';
+--                            else
+--                                time_remaining(K)(N) <= time_remaining(K)(N) - 1;
+--                            end if;
+--                        end if;
                     end loop;
                 end loop;  
                 
                 -- Rotate current command
+
                 if current_command = (CONTROLS_CONTAINER'length - 1) and current_player = (NB_PLAYERS - 1) then
                     current_command <= 0;
                     current_player <= 0;
@@ -115,9 +116,9 @@ begin
     end process;
  
     -- Output multiplexer
-    process(controls_status, controls_active, current_command, current_player)
+    process(controls_status, current_command, current_player)
     begin
-        if (controls_status(current_command)(current_player) and controls_active(current_command)(current_player)) = '1' then
+        if controls_status(current_command)(current_player) = '1' then
             out_command <= CONTROLS_CONTAINER(current_command)(current_player);
         else
             out_command <= x"00";

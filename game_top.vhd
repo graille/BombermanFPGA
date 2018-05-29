@@ -68,6 +68,8 @@ architecture behavioral of GAME_TOP is
     signal gu_out_block         : block_type := DEFAULT_BLOCK;
     signal gu_out_write         : std_logic := '0';
 
+    signal gu_out_time_remaining : millisecond_count := 0;
+    
     -- Pixel ram
     signal pr_out_pixel : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0);
 
@@ -117,8 +119,8 @@ begin
     LED_DEBUG:for K in 0 to (NB_PLAYERS - 1) mod 4 generate
         LED(K * 4) <= '1' when next_io = CONTROLS_CONTAINER(0)(K) else '0';
         LED(K * 4 + 1) <= '1' when next_io = CONTROLS_CONTAINER(1)(K) else '0';
-        LED(K * 4 + 2) <= '1' when next_io = CONTROLS_CONTAINER(2)(K) else '0';
-        LED(K * 4 + 3) <= '1' when next_io = CONTROLS_CONTAINER(3)(K) else '0';
+        LED(K * 4 + 2) <= '1' when keyboard_output(7 downto 0) = CONTROLS_CONTAINER(2)(K) else '0';
+        LED(K * 4 + 3) <= '1' when keyboard_output(7 downto 0) = CONTROLS_CONTAINER(3)(K) else '0';
     end generate;
 
     CLK_DIV : clk_wiz_0
@@ -182,7 +184,9 @@ begin
 
         in_requested_player     => gc_out_request_player,
         out_player_position     => gc_in_player_position,
-        out_player_status       => gc_in_player_status
+        out_player_status       => gc_in_player_status,
+        
+        out_time_remaining => gu_out_time_remaining
     );
 
     I_BLOCK_RAM: entity work.block_ram
@@ -215,7 +219,9 @@ begin
         in_player_position     => gc_in_player_position,
         in_player_status       => gc_in_player_status,
 
-        in_new_image        => VGA_VS_O_t
+        in_new_image        => VGA_VS_O_t,
+        
+        in_time_remaining   => gu_out_time_remaining
     );
 
     I_PIXEL_RAM: entity work.pixel_ram

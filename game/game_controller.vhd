@@ -180,7 +180,7 @@ begin
                 rst => rst,
 
                 in_millisecond => millisecond,
-                in_io => in_io,
+                --in_io => in_io,
                 in_dol => "1111",
 
                 in_next_block => players_block_to_process(k),
