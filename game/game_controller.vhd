@@ -51,6 +51,8 @@ architecture behavioral of game_controller is
     signal millisecond : millisecond_count := 0;
     signal millisecond_counter_reset : std_logic := '0';
 
+    signal time_remaining : millisecond_count := 0;
+
     signal rst_millisecond_counter, real_rst_millisecond_counter : std_logic := '0';
 
     -- Physics engines
@@ -208,6 +210,17 @@ begin
 
     -- Grid position updater
     out_grid_position <= current_grid_position;
+
+    -- Player information transmitter
+    out_player_position <= players_position(in_requested_player);
+    out_player_status <= players_status(in_requested_player);
+
+    -- I/O output manager
+    out_io_command_request <= current_command;
+    out_io_player_request <= current_player;
+
+    -- Time remaining output
+    out_time_remaining <= time_remaining;
 
     real_rst_prng <= RST or rst_prng;
     PRNG_GENERATOR:entity work.simple_prng_lfsr
@@ -393,9 +406,9 @@ begin
                         end if;
                     when STATE_GAME_UPDATE_TIME_REMAINING =>
                         if death_mode_activated = '0' then
-                            out_time_remaining <= NORMAL_MODE_DURATION - millisecond;
+                            time_remaining <= NORMAL_MODE_DURATION - millisecond;
                         else
-                            out_time_remaining <= (NORMAL_MODE_DURATION + DEATH_MODE_DURATION) - millisecond;
+                            time_remaining <= (NORMAL_MODE_DURATION + DEATH_MODE_DURATION) - millisecond;
                         end if;
 
                         current_state <= STATE_CHECK_DEATH_MODE;
@@ -408,7 +421,7 @@ begin
                         current_state <= STATE_GAME;
                     ----------------------------------------------------------------
                     when STATE_GAME_OVER =>
-                        out_time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 - millisecond;
+                        time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 - millisecond;
 
                         if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 then
                             current_state <= STATE_START;
