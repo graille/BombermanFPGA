@@ -10,7 +10,7 @@ entity font_sprite_rom is
     port (
         clk : in std_logic;
 
-        in_sprite_id : in block_category_type;
+        in_sprite_id : in integer range 0 to 127;
         in_sprite_state : in state_type;
         in_sprite_direction : in direction_type;
 
@@ -3777,7 +3777,7 @@ architecture behavioral of font_sprite_rom is
 
     constant rom : memory_t := init_mem;
     signal real_row : integer range 0 to 3551 := 0;
-    signal out_color_reg : std_logic_vector(139 downto 0) := (others => '0');
+    signal out_color_reg : std_logic_vector(0 to 139) := (others => '0');
 begin
     process(in_sprite_id, in_sprite_row, in_sprite_col, in_sprite_state, in_sprite_direction)
     begin

@@ -45,8 +45,8 @@ package PROJECT_PARAMS_PKG is
     constant CHARACTER_GRAPHIC_HEIGHT : integer := BLOCK_GRAPHIC_HEIGHT;
     constant CHARACTER_GRAPHIC_WIDTH : integer := BLOCK_GRAPHIC_WIDTH;
 
-    constant FONT_GRAPHIC_HEIGHT : integer := 40;
-    constant FONT_GRAPHIC_WIDTH : integer := 30;
+    constant FONT_GRAPHIC_HEIGHT : integer := 37;
+    constant FONT_GRAPHIC_WIDTH : integer := 28;
 
     -- O-----> Y axis
     -- |
@@ -54,7 +54,7 @@ package PROJECT_PARAMS_PKG is
     -- X axis
 
     -- Game parameters
-    constant NORMAL_MODE_DURATION : integer := 5 * 60 * 1000;
+    constant NORMAL_MODE_DURATION : integer := 3 * 60 * 1000;
     constant DEATH_MODE_DURATION : integer := 60 * 1000;
 
     -- Counter precision
@@ -64,9 +64,8 @@ package PROJECT_PARAMS_PKG is
     ---------------------------------------------------------------------------
     -- Controls parameters
     ---------------------------------------------------------------------------
-
-    type commands_array_type is array(0 to NB_PLAYERS - 1) of std_logic_vector(7 downto 0);
-    type commands_container_type is array(0 to 4) of commands_array_type;
+    constant NB_CONTROLS : integer := 5;
+    type commands_container_type is array(0 to NB_CONTROLS - 1, 0 to NB_PLAYERS - 1) of std_logic_vector(7 downto 0);
     constant CONTROLS_CONTAINER : commands_container_type := (
         (x"1D", x"43", x"6C", x"75"), -- Forward controls
         (x"23", x"4b", x"7A", x"74"), -- Right controls
@@ -75,7 +74,7 @@ package PROJECT_PARAMS_PKG is
 
         (x"24", x"44", x"7d", x"70") -- Bomb controls
     );
-    constant NB_CONTROLS : integer := CONTROLS_CONTAINER'length;
+    
 
     ---------------------------------------------------------------------------
     -- Graphical parameters

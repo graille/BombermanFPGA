@@ -21,7 +21,7 @@ entity game_controller is
         in_seed : in std_logic_vector(SEED_LENGTH - 1 downto 0);
 
         -- I/O informations
-        in_io : in io_signal;
+        in_io_state : in std_logic;
         out_io_command_request : out integer range 0 to NB_CONTROLS - 1;
         out_io_player_request : out integer range 0 to NB_PLAYERS - 1;
 
@@ -65,8 +65,8 @@ architecture behavioral of game_controller is
     ---------------------------------------------------------------------------
     signal current_command : integer range 0 to NB_CONTROLS - 1 := 0;
 
-    type time_count_array_type is array(natural range <>) of millisecond_count;
-    signal last_command_update : time_count_array_type(NB_PLAYERS - 1 downto 0) := (others => 0);
+    type time_count_array_type is array(natural range <>, natural range <>) of millisecond_count;
+    signal last_command_update : time_count_array_type(NB_CONTROLS - 1 downto 0, NB_PLAYERS - 1 downto 0) := (others => (others => 0));
 
     ---------------------------------------------------------------------------
     -- Player values
@@ -83,15 +83,16 @@ architecture behavioral of game_controller is
     signal players_position : array_vector(NB_PLAYERS - 1 downto 0) := (others => DEFAULT_VECTOR_POSITION);
     signal players_grid_position : players_grid_position_type := (others => (others => 0));
 
-    type players_speed_type is array(NB_PLAYERS - 1 downto 0) of integer range 0 to 2**6 - 1;
+    subtype player_speed_type is integer range 0 to 2**6 - 1;
+    type players_speed_type is array(NB_PLAYERS - 1 downto 0) of player_speed_type;
     signal players_speed : players_speed_type := (others => PLAYER_DEFAULT_SPEED);
 
     type players_power_type is array(NB_PLAYERS - 1 downto 0) of integer range 0 to MAX_PLAYER_POWER - 1;
-    signal players_power : players_power_type := 1;
+    signal players_power : players_power_type := (others => 1);
 
     type players_bombs_counter is array(NB_PLAYERS - 1 downto 0) of integer range 0 to 31;
-    signal players_max_bombs : players_bombs_counter := 1;
-    signal players_nb_bombs : players_bombs_counter := 0;
+    signal players_max_bombs : players_bombs_counter := (others => 1);
+    signal players_nb_bombs : players_bombs_counter := (others => 0);
     signal players_can_plant_bomb : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '1');
 
     -- Bonus
@@ -105,7 +106,7 @@ architecture behavioral of game_controller is
     signal players_inversed_commands : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
 
     type players_status_type is array(NB_PLAYERS - 1 downto 0) of player_status_type;
-    signal player_status : players_status_type := (others => DEFAULT_PLAYER_STATUS);
+    signal players_status : players_status_type := (others => DEFAULT_PLAYER_STATUS);
 
     function INIT_PLAYER_POSITION(nb : integer)
         return vector is
@@ -170,6 +171,11 @@ architecture behavioral of game_controller is
         STATE_GAME,
             STATE_GAME_UPDATE_TIME_REMAINING,
 
+            STATE_UPDATE_PLAYERS_POSITION,
+            STATE_UPDATE_PLAYERS_POSITION_WAIT,
+            STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER,
+            STATE_UPDATE_PLAYERS_POSITION_ROTATE_COMMAND,
+
             STATE_GAME_PLAYERS_BOMB_CHECK,
             STATE_GAME_PLAYERS_BOMB_CHECK_ROTATE,
 
@@ -201,13 +207,6 @@ architecture behavioral of game_controller is
     signal current_grid_position : grid_position := DEFAULT_GRID_POSITION;
     signal death_mode_activated : std_logic := '0';
 begin
-    -- Players informations multiplexer (Combinatorial module)
-    process(in_requested_player, players_position, players_status)
-    begin
-        out_player_position <= players_position(in_requested_player);
-        out_player_status <= players_status(in_requested_player);
-    end process;
-
     -- Grid position updater
     out_grid_position <= current_grid_position;
 
@@ -253,20 +252,20 @@ begin
 
 
     -- Instantiate collisions detectors
-    I_PLAYER_PHYSIC_ENGINE:entity work.collision_detector_rect_rect
-        port map(
-            o_pos => players_position(current_player),
-            o_dim => DEFAULT_PLAYER_HITBOX,
-            t_pos => phy_position,
-            t_dim => DEFAULT_BLOCK_SIZE,
-            is_colliding => players_collision(current_player)
-        );
+--    I_PLAYER_PHYSIC_ENGINE:entity work.collision_detector_rect_rect
+--        port map(
+--            o_pos => players_position(current_player),
+--            o_dim => DEFAULT_PLAYER_HITBOX,
+--            t_pos => phy_position,
+--            t_dim => DEFAULT_BLOCK_SIZE,
+--            is_colliding => players_collision(current_player)
+--        );
 
-    I_PLAYER_POSITION_CONVERTER:entity work.player_to_grid
-        port map(
-            in_player_position => players_position(current_player),
-            out_position => players_grid_position(current_player)
-        );
+--    I_PLAYER_POSITION_CONVERTER:entity work.player_to_grid
+--        port map(
+--            in_player_position => players_position(current_player),
+--            out_position => players_grid_position(current_player)
+--        );
 
     -- Reset controller
     process(current_state)
@@ -282,6 +281,7 @@ begin
 
     process(clk)
         variable players_alive : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
+        variable real_speed : player_speed_type := 0;
     begin
         if rising_edge(CLK) then
             if RST = '1' then
@@ -382,6 +382,7 @@ begin
                     when STATE_PLAYERS_INIT =>
                         players_position(current_player) <= INIT_PLAYER_POSITION(current_player);
                         players_status(current_player).direction <= INIT_PLAYER_DIRECTION(current_player);
+                        players_status(current_player).id <= (current_player + players_status(current_player).id) mod 7;
 
                         current_state <= STATE_PLAYERS_INIT_ROTATE;
                     when STATE_PLAYERS_INIT_ROTATE =>
@@ -395,7 +396,7 @@ begin
 
                     ----------------------------------------------------------------
                     when STATE_GAME =>
-                        for L in 0 to NB_PLAYERs - 1 loop
+                        for L in 0 to NB_PLAYERS - 1 loop
                             players_alive(L) := players_status(L).is_alive;
                         end loop;
 
@@ -411,7 +412,77 @@ begin
                             time_remaining <= (NORMAL_MODE_DURATION + DEATH_MODE_DURATION) - millisecond;
                         end if;
 
-                        current_state <= STATE_CHECK_DEATH_MODE;
+                        current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
+                    
+                    when STATE_UPDATE_PLAYERS_POSITION =>
+                        case players_inversed_commands(current_player) is
+                            when '0' =>
+                                real_speed := players_speed(current_player);
+                            when '1' =>
+                                real_speed := -players_speed(current_player);
+                            when others => null;
+                        end case;
+        
+                        -- Update position
+                        if millisecond - last_command_update(current_command, current_player) >= 3 then
+                            last_command_update(current_command, current_player) <= millisecond;
+
+                            if in_io_state = '1' then
+                                case current_command is
+                                     when D_UP =>
+                                        --if in_dol(D_UP) = '1' or player_wall_hack = '1' then
+                                            players_position(current_player).X <= (players_position(current_player).X - real_speed) mod VECTOR_PRECISION_X;
+                                        --end if;
+                                        players_status(current_player).direction <= D_UP;
+                                        
+                                    when D_DOWN =>
+                                        --if in_dol(D_DOWN) = '1' or player_wall_hack = '1' then
+                                            players_position(current_player).X <= (players_position(current_player).X + real_speed) mod VECTOR_PRECISION_X;
+                                        --end if;
+                                        players_status(current_player).direction <= D_DOWN;
+                                    when D_LEFT =>
+                                        --if in_dol(D_LEFT) = '1' or player_wall_hack = '1' then
+                                            players_position(current_player).Y <= (players_position(current_player).Y - real_speed) mod VECTOR_PRECISION_Y;
+                                        --end if;
+                                        players_status(current_player).direction <= D_LEFT;
+                                    when D_RIGHT =>
+                                        --if in_dol(D_RIGHT) = '1' or player_wall_hack = '1' then
+                                            players_position(current_player).Y <= (players_position(current_player).Y + real_speed) mod VECTOR_PRECISION_Y;
+                                        --end if;
+                                        players_status(current_player).direction <= D_RIGHT;
+                                    when 4 =>
+                                        if (players_nb_bombs(current_player) < players_max_bombs(current_player)) and (players_can_plant_bomb(current_player) = '1') then
+                                            players_nb_bombs(current_player) <= players_nb_bombs(current_player) + 1;
+                                            --(PLANT_NORMAL_BOMB, in_millisecond);
+                                        end if;
+                                    when others => null;
+                                end case;
+                            end if;
+                        end if;
+
+                        current_state <= STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER;
+
+                    when STATE_UPDATE_PLAYERS_POSITION_WAIT =>
+                        current_state <= STATE_UPDATE_PLAYERS_POSITION;
+                    when STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER =>
+                        if current_player = NB_PLAYERS - 1 then
+                            current_player <= 0;
+                            current_state <= STATE_UPDATE_PLAYERS_POSITION_ROTATE_COMMAND;
+                        else
+                            current_player <= current_player + 1;
+                            current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
+                        end if;
+                        
+                    when STATE_UPDATE_PLAYERS_POSITION_ROTATE_COMMAND =>
+                        if current_command = NB_CONTROLS - 1 then
+                            current_state <= STATE_CHECK_DEATH_MODE;
+                            current_command <= 0;
+                            current_player <= 0;
+                        else
+                            current_command <= current_command + 1;
+                            current_player <= 0;
+                            current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
+                        end if;
                     when STATE_CHECK_DEATH_MODE =>
                         if millisecond > NORMAL_MODE_DURATION then
                             death_mode_activated <= '1';
@@ -421,9 +492,9 @@ begin
                         current_state <= STATE_GAME;
                     ----------------------------------------------------------------
                     when STATE_GAME_OVER =>
-                        time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 - millisecond;
+                        time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION - millisecond;
 
-                        if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION + 8000 then
+                        if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION then
                             current_state <= STATE_START;
                         end if;
                     when others => null;

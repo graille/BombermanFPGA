@@ -27,7 +27,7 @@ entity graphic_controller is
         
         in_new_image : in std_logic := '0';
         
-        in_time_remaining : in millisecond_count
+        in_time_remaining : in millisecond_count := 0
     );
 end graphic_controller;
 
@@ -190,12 +190,14 @@ begin
                     end if;
                 end if;
             when WRITE_BOTTOM_TIMER_PIXEL_STATE =>
-                if font_current_color = "00000" then
-                    out_write_pixel <= '1';
-                    out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
-                else
-                    out_write_pixel <= '1';
-                    out_pixel_value <= std_logic_vector(to_unsigned(0, COLOR_BIT_PRECISION));
+                if current_grid_position.j > GRID_COLS / 2 then
+                    if font_current_color = "00000" then
+                        out_write_pixel <= '1';
+                        out_pixel_value <= std_logic_vector(to_unsigned(1, COLOR_BIT_PRECISION));
+                    else
+                        out_write_pixel <= '1';
+                        out_pixel_value <= std_logic_vector(to_unsigned(0, COLOR_BIT_PRECISION));
+                    end if;
                 end if;
             when WRITE_BLOCK_PIXEL_STATE =>
                 if block_current_color /= TRANSPARENT_COLOR then
@@ -274,7 +276,7 @@ begin
                             
                             current_player_nb <= 0;
                             
-                            current_state <= GAME_TRANSITION_STATE;
+                            current_state <= WRITE_BOTTOM_TIMER_PIXEL_STATE;
                         else
                             current_character_position <= DEFAULT_CHARACTER_POSITION;
                             current_grid_position.j <= current_grid_position.j + 1;
@@ -326,7 +328,7 @@ begin
                                     current_timer_nb <= 16 + (time_remaining mod 10);
                                     current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 3 =>
-                                    current_timer_nb <= 16 + ((time_remaining / 10) mod 10);
+                                    current_timer_nb <= 16 + (((time_remaining - ((time_remaining / 60) * 60)) / 10) mod 6);
                                     current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 4 =>
                                     current_timer_nb <= (10) + 16;
@@ -348,7 +350,7 @@ begin
                         -- Update state
                         if current_font_position = DEFAULT_LAST_FONT_POSITION then
                             current_state <= ROTATE_BOTTOM_TIMER_STATE;
-                        elsif current_font_position.Y = 0 then
+                        elsif current_font_position.Y = FONT_GRAPHIC_WIDTH - 1 then
                             current_font_position <= (current_font_position.X + 1, 0);
                             current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                         else

@@ -87,11 +87,14 @@ architecture behavioral of GAME_TOP is
     -- I/O
     signal keyboard_output : std_logic_vector(7 downto 0);
     signal keyboard_output_new : std_logic := '0';
-    signal next_io : io_signal;
+    signal next_io_state : std_logic := '0';
 
 
     signal CLK_KEYBOARD : std_logic;
     signal COLOR_R, COLOR_G, COLOR_B: STD_LOGIC_VECTOR (7 downto 0);
+
+    signal io_requested_command : integer range 0 to NB_CONTROLS - 1;
+    signal io_requested_player : integer range 0 to NB_PLAYERS - 1;
 
     -- Component
 --    component keyboard_top
@@ -142,17 +145,22 @@ begin
     );
 
     -- I/O
-    LED <= SW;
+    --LED <= SW;
 
     I_IO_CONTROLLER : entity work.io_controller
     port map (
         CLK     => CLK,
-        RST         => REAL_RST,
+        RST     => REAL_RST,
 
         in_command  => keyboard_output,
         in_new_command => keyboard_output_new,
-        out_command => next_io
+        
+        in_requested_command => io_requested_command,
+        in_requested_player => io_requested_player,
+        out_command => next_io_state
     );
+    
+    LED(0) <= next_io_state;
 
     I_KEYBOARD:ps2_keyboard
     generic map (
@@ -179,7 +187,10 @@ begin
 
         in_seed           => SW,
 
-        in_io             => next_io,
+        in_io_state       => next_io_state,
+        out_io_command_request => io_requested_command,
+        out_io_player_request =>  io_requested_player,
+        
         in_read_block     => gu_in_read_block,
 
         game_end          => gu_out_game_end,
