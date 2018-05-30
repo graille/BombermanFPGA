@@ -14,9 +14,7 @@ entity player_to_grid is
 end player_to_grid;
 
 architecture behavioral of player_to_grid is
-    constant FACTOR_HEIGHT : integer := VECTOR_PRECISION_X / (GRID_ROWS + 1);
-    constant FACTOR_WIDTH : integer := VECTOR_PRECISION_Y / GRID_COLS;
 begin
-    out_position.i <= (in_player_position.X + (DEFAULT_PLAYER_HITBOX.X / 2)) / FACTOR_HEIGHT + 1;
-    out_position.j <= (in_player_position.Y + (DEFAULT_PLAYER_HITBOX.Y / 2)) / FACTOR_WIDTH + 1;
+    out_position.i <= (in_player_position.X + (DEFAULT_PLAYER_HITBOX.X / 2)) / DEFAULT_BLOCK_SIZE_X;
+    out_position.j <= (in_player_position.Y + (DEFAULT_PLAYER_HITBOX.Y / 2)) / DEFAULT_BLOCK_SIZE_Y;
 end behavioral;

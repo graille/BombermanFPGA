@@ -58,11 +58,7 @@ architecture behavioral of game_controller is
     signal players_collision : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
     signal phy_position_grid : grid_position;
     signal phy_position : vector;
-    ---------------------------------------------------------------------------
-    -- Grid
-    ---------------------------------------------------------------------------
-
-
+    
     ---------------------------------------------------------------------------
     -- Commands
     ---------------------------------------------------------------------------
@@ -554,7 +550,7 @@ begin
                     when STATE_CHECK_PLAYERS_DOG =>
                         for K in 0 to NB_PLAYERS - 1 loop
                             for L in 0 to 3 loop
-                                if GIVE_BLOCK_POSITION(players_grid_position(K), current_grid_position) = L then
+                                if (GIVE_BLOCK_POSITION(players_grid_position(K), current_grid_position) = L) and (players_collision(K) = '1') then
                                     if in_read_block.category = EMPTY_BLOCK then
                                         players_dol(K)(L) <= '1';
                                     else
