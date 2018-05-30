@@ -32,12 +32,12 @@ package PROJECT_PARAMS_PKG is
     -- Vectors
     constant VECTOR_PRECISION_Y : integer := 2**12;
     constant VECTOR_PRECISION_X : integer := VECTOR_PRECISION_Y * FRAME_HEIGHT / FRAME_WIDTH; -- Ratio conservation
-    
+
     constant DEFAULT_BLOCK_SIZE_X : integer := VECTOR_PRECISION_X / (GRID_ROWS + 1); -- Last column reserved
     constant DEFAULT_BLOCK_SIZE_Y : integer := VECTOR_PRECISION_Y / GRID_COLS;
     constant DEFAULT_PLAYER_HITBOX_X : integer := DEFAULT_BLOCK_SIZE_X * 2 / 3;
     constant DEFAULT_PLAYER_HITBOX_Y : integer := DEFAULT_BLOCK_SIZE_Y * 2 / 3;
-    
+
     -- Graphic elements
     constant BLOCK_GRAPHIC_WIDTH : integer := FRAME_WIDTH / GRID_COLS;
     constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / (GRID_ROWS + 1);
@@ -64,7 +64,7 @@ package PROJECT_PARAMS_PKG is
     ---------------------------------------------------------------------------
     -- Controls parameters
     ---------------------------------------------------------------------------
-    
+
     type commands_array_type is array(0 to NB_PLAYERS - 1) of std_logic_vector(7 downto 0);
     type commands_container_type is array(0 to 4) of commands_array_type;
     constant CONTROLS_CONTAINER : commands_container_type := (
@@ -72,9 +72,10 @@ package PROJECT_PARAMS_PKG is
         (x"23", x"4b", x"7A", x"74"), -- Right controls
         (x"1B", x"42", x"69", x"72"), -- Back controls
         (x"1C", x"3b", x"71", x"66"), -- Left controls
-        
+
         (x"24", x"44", x"7d", x"70") -- Bomb controls
     );
+    constant NB_CONTROLS : integer := CONTROLS_CONTAINER'length;
 
     ---------------------------------------------------------------------------
     -- Graphical parameters
