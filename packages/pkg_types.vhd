@@ -100,6 +100,9 @@ package PROJECT_TYPES_PKG is
     type players_action_type is array(NB_PLAYERS - 1 downto 0) of player_action;
     type players_status_type is array(NB_PLAYERS - 1 downto 0) of player_status_type;
 
+    -- I/O types
+    type controls_status_type is array(CONTROLS_CONTAINER'length - 1 downto 0) of std_logic_vector(NB_PLAYERS - 1 downto 0);
+
     -- Processed constants
     constant DEFAULT_BLOCK_SIZE : vector := (DEFAULT_BLOCK_SIZE_X, DEFAULT_BLOCK_SIZE_Y);
     constant DEFAULT_PLAYER_HITBOX : vector := (DEFAULT_PLAYER_HITBOX_X, DEFAULT_PLAYER_HITBOX_Y);

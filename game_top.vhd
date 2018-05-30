@@ -85,9 +85,11 @@ architecture behavioral of GAME_TOP is
     signal VGA_VS_O_t : STD_LOGIC;
 
     -- I/O
-    signal keyboard_output : std_logic_vector(7 downto 0);
+    signal keyboard_output : unsigned(7 downto 0);
     signal keyboard_output_new : std_logic := '0';
-    signal next_io_state : std_logic := '0';
+    
+    signal io_current_status : std_logic := '0';
+    signal io_do_read : std_logic := '0';
 
 
     signal CLK_KEYBOARD : std_logic;
@@ -110,20 +112,33 @@ architecture behavioral of GAME_TOP is
 --        UART_TXD : out std_logic
 --    );
 --    end component;
-    component ps2_keyboard IS
-        GENERIC(
-            clk_freq              : INTEGER;
-            debounce_counter_size : INTEGER
-        );      
-        PORT(
-            clk          : IN  STD_LOGIC;             
-            ps2_clk      : IN  STD_LOGIC;          
-            ps2_data     : IN  STD_LOGIC;          
-            ps2_code_new : OUT STD_LOGIC;                     
-            ps2_code     : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
-        ); 
-    END component;
+--    component ps2_keyboard IS
+--        GENERIC(
+--            clk_freq              : INTEGER;
+--            debounce_counter_size : INTEGER
+--        );      
+--        PORT(
+--            clk          : IN  STD_LOGIC;             
+--            ps2_clk      : IN  STD_LOGIC;          
+--            ps2_data     : IN  STD_LOGIC;          
+--            ps2_code_new : OUT STD_LOGIC;                     
+--            ps2_code     : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+--        ); 
+--    END component;
 
+    component PS2_Ctrl is
+      generic (FilterSize : positive := 8);
+      port( Clk       : in  std_logic;  -- System Clock
+            Reset     : in  std_logic;  -- System Reset
+            PS2_Clk   : in  std_logic;  -- Keyboard Clock Line
+            PS2_Data  : in  std_logic;  -- Keyboard Data Line
+            DoRead    : in  std_logic;  -- From outside when reading the scan code
+            Scan_Err  : out std_logic;  -- To outside : Parity or Overflow error
+            Scan_DAV  : out std_logic;  -- To outside when a scan code has arrived
+            Scan_Code : out unsigned(7 downto 0) -- Eight bits Data Out
+            );
+    end component;
+    
     component clk_wiz_0
     port (
         CLK_IN1  : in     std_logic;
@@ -143,37 +158,44 @@ begin
         CLK_OUT2 => CLK_VGA,
         CLK_OUT3 => CLK_KEYBOARD
     );
+    
+    LED(0) <= REAL_RST;
+    LED(1) <= io_current_status;
+    LED(2) <= PS2_CLK;
+    LED(3) <= keyboard_output_new;
 
     -- I/O
     --LED <= SW;
 
     I_IO_CONTROLLER : entity work.io_controller
     port map (
-        CLK     => CLK,
+        CLK     => PS2_CLK,
         RST     => REAL_RST,
 
-        in_command  => keyboard_output,
+        in_command  => std_logic_vector(keyboard_output),
         in_new_command => keyboard_output_new,
         
         in_requested_command => io_requested_command,
         in_requested_player => io_requested_player,
-        out_command => next_io_state
+        out_control_status => io_current_status,
+        out_do_read => io_do_read
     );
     
-    LED(0) <= next_io_state;
 
-    I_KEYBOARD:ps2_keyboard
+    I_KEYBOARD:entity work.PS2_Ctrl
     generic map (
-        clk_freq => FREQUENCY,
-        debounce_counter_size => 9
+        FilterSize => 9
     )
     port map (
         CLK => CLK,
+        Reset => REAL_RST,
         PS2_CLK => PS2_CLK,
         PS2_DATA => PS2_DATA,
         
-        ps2_code => keyboard_output,
-        ps2_code_new => keyboard_output_new
+        DoRead => io_do_read,
+        
+        Scan_Code => keyboard_output,
+        Scan_DAV => keyboard_output_new
     );
 
     I_GAME_CONTROLLER: entity work.game_controller
@@ -187,7 +209,7 @@ begin
 
         in_seed           => SW,
 
-        in_io_state       => next_io_state,
+        in_io_state       => io_current_status,
         out_io_command_request => io_requested_command,
         out_io_player_request =>  io_requested_player,
         

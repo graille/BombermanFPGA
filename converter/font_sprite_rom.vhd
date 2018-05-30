@@ -3889,5 +3889,5 @@ begin
             out_color_reg <= rom(real_row);
         end if;
     end process;
-    out_color <= out_color_reg(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
+    out_color <= out_color_reg((in_sprite_col * 5) to ((in_sprite_col + 1) * 5) - 1);
 end behavioral;

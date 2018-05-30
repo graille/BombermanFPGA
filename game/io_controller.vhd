@@ -17,12 +17,13 @@ entity io_controller is
         
         in_requested_command : in integer range 0 to NB_CONTROLS - 1;
         in_requested_player : in integer range 0 to NB_PLAYERS - 1;
-        out_command : out std_logic := '0'
+        out_control_status : out std_logic;
+        
+        out_do_read : out std_logic := '0'
     );
 end io_controller;
 
 architecture behavioral of io_controller is
-    type controls_status_type is array(CONTROLS_CONTAINER'length - 1 downto 0) of std_logic_vector(NB_PLAYERS - 1 downto 0);
     signal controls_status : controls_status_type := (others => (others => '0'));
     
     signal next_stop : std_logic := '0';
@@ -33,15 +34,22 @@ begin
             if RST = '1' then
                 controls_status <= (others => (others => '0'));
             else
-                controls_status <= (others => (others => '0'));
-                
+                out_do_read <= '0';
+                if in_command = x"F0" then
+                    next_stop <= '1';
+                end if;
                 if in_new_command = '1' then
                     for K in 0 to CONTROLS_CONTAINER'length - 1 loop
                         for N in 0 to NB_PLAYERS - 1 loop
                             if in_command = CONTROLS_CONTAINER(K, N) then
-                                controls_status(K)(N) <= '1';
-                            else
-                                null;
+                                if next_stop = '1' then
+                                    controls_status(K)(N) <= '0';
+                                    next_stop <= '0';
+                                else
+                                    controls_status(K)(N) <= '1';
+                                end if;
+                                
+                                out_do_read <= '1';
                             end if;
                         end loop;
                     end loop;  
@@ -50,5 +58,5 @@ begin
         end if;
     end process;
     
-    out_command <= controls_status(in_requested_command)(in_requested_player);
+    out_control_status <= controls_status(in_requested_command)(in_requested_player);
 end behavioral;

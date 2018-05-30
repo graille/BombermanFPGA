@@ -328,7 +328,7 @@ begin
                                     current_timer_nb <= 16 + (time_remaining mod 10);
                                     current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 3 =>
-                                    current_timer_nb <= 16 + (((time_remaining - ((time_remaining / 60) * 60)) / 10) mod 6);
+                                    current_timer_nb <= 16 + ((time_remaining mod 60) / 10);
                                     current_state <= WAIT_BOTTOM_TIMER_PIXEL_STATE;
                                 when GRID_COLS - 4 =>
                                     current_timer_nb <= (10) + 16;

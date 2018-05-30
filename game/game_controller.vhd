@@ -49,7 +49,6 @@ end game_controller;
 architecture behavioral of game_controller is
     -- Millisecond counter
     signal millisecond : millisecond_count := 0;
-    signal millisecond_counter_reset : std_logic := '0';
 
     signal time_remaining : millisecond_count := 0;
 
@@ -59,6 +58,10 @@ architecture behavioral of game_controller is
     signal players_collision : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
     signal phy_position_grid : grid_position;
     signal phy_position : vector;
+    ---------------------------------------------------------------------------
+    -- Grid
+    ---------------------------------------------------------------------------
+
 
     ---------------------------------------------------------------------------
     -- Commands
@@ -75,13 +78,16 @@ architecture behavioral of game_controller is
     constant PLAYER_DEFAULT_SPEED : integer := 2;
 
     signal current_player : integer range 0 to NB_PLAYERS - 1 := 0;
-
+    
     -- Players states
     signal players_alive : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '1'); -- 1 = alive, 0 = dead
 
     -- Players informations
     signal players_position : array_vector(NB_PLAYERS - 1 downto 0) := (others => DEFAULT_VECTOR_POSITION);
     signal players_grid_position : players_grid_position_type := (others => (others => 0));
+
+    type players_dol_type is array(NB_PLAYERS - 1 downto 0) of std_logic_vector(3 downto 0);
+    signal players_dol : players_dol_type := (others => (others => '0'));
 
     subtype player_speed_type is integer range 0 to 2**6 - 1;
     type players_speed_type is array(NB_PLAYERS - 1 downto 0) of player_speed_type;
@@ -137,6 +143,33 @@ architecture behavioral of game_controller is
 
         return direction;
     end INIT_PLAYER_DIRECTION;
+    
+    function GIVE_BLOCK_POSITION(player_pos : grid_position; block_pos : grid_position)
+        return integer is
+        variable direction : integer range 0 to 4 := 4;
+    begin
+        if block_pos.i = player_pos.i then
+            if block_pos.j = player_pos.j + 1 then
+                direction := D_RIGHT;
+            elsif block_pos.j = player_pos.j - 1 then
+                direction := D_LEFT;
+            else
+                direction := 4;
+            end if;
+        elsif block_pos.j = player_pos.j then
+            if block_pos.i = player_pos.i + 1 then
+                direction := D_UP;
+            elsif block_pos.i = player_pos.i - 1 then
+                direction := D_DOWN;
+            else
+                direction := 4;
+            end if;
+        else
+            direction := 4;
+        end if;
+        
+        return direction;
+    end GIVE_BLOCK_POSITION;
 
     ---------------------------------------------------------------------------
     -- PRNG value
@@ -181,6 +214,7 @@ architecture behavioral of game_controller is
 
             STATE_GAME_GRID_UPDATE,
             STATE_GAME_GRID_UPDATE_ROTATE,
+            STATE_GAME_GRID_UPDATE_WAIT,
                 STATE_GAME_GRID_UPDATE_PLAYERS,
                 -- When we check a cells, we have to check adjacent cells
                 STATE_GAME_GRID_UPDATE_CHECK_CENTER,
@@ -189,11 +223,11 @@ architecture behavioral of game_controller is
                 STATE_GAME_GRID_UPDATE_CHECK_BOTTOM,
                 STATE_GAME_GRID_UPDATE_CHECK_RIGHT,
 
-            STATE_CHECK_PLAYERS_DOG,
-                STATE_GAME_PLAYERS_DOG_CHECK_TOP,
-                STATE_GAME_PLAYERS_DOG_CHECK_LEFT,
-                STATE_GAME_PLAYERS_DOG_CHECK_BOTTOM,
-                STATE_GAME_PLAYERS_DOG_CHECK_RIGHT,
+                STATE_CHECK_PLAYERS_DOG,
+                    STATE_GAME_PLAYERS_DOG_CHECK_TOP,
+                    STATE_GAME_PLAYERS_DOG_CHECK_LEFT,
+                    STATE_GAME_PLAYERS_DOG_CHECK_BOTTOM,
+                    STATE_GAME_PLAYERS_DOG_CHECK_RIGHT,
 
             STATE_CHECK_DEATH_MODE,
 
@@ -237,7 +271,7 @@ begin
         );
 
     -- Millisecond counter
-    real_rst_millisecond_counter <= RST or millisecond_counter_reset;
+    real_rst_millisecond_counter <= RST or rst_millisecond_counter;
     COUNTER_ENGINE:entity work.millisecond_counter
         generic map (
             FREQUENCY => FREQUENCY
@@ -252,20 +286,22 @@ begin
 
 
     -- Instantiate collisions detectors
---    I_PLAYER_PHYSIC_ENGINE:entity work.collision_detector_rect_rect
---        port map(
---            o_pos => players_position(current_player),
---            o_dim => DEFAULT_PLAYER_HITBOX,
---            t_pos => phy_position,
---            t_dim => DEFAULT_BLOCK_SIZE,
---            is_colliding => players_collision(current_player)
---        );
+    PHYSIC_GENERATOR:for K in 0 to NB_PLAYERS - 1 generate
+    I_PLAYER_PHYSIC_ENGINE:entity work.collision_detector_rect_rect
+        port map(
+            o_pos => players_position(K),
+            o_dim => DEFAULT_PLAYER_HITBOX,
+            t_pos => phy_position,
+            t_dim => DEFAULT_BLOCK_SIZE,
+            is_colliding => players_collision(K)
+        );
 
---    I_PLAYER_POSITION_CONVERTER:entity work.player_to_grid
---        port map(
---            in_player_position => players_position(current_player),
---            out_position => players_grid_position(current_player)
---        );
+    I_PLAYER_POSITION_CONVERTER:entity work.player_to_grid
+        port map(
+            in_player_position => players_position(K),
+            out_position => players_grid_position(K)
+        );
+    end generate;
 
     -- Reset controller
     process(current_state)
@@ -287,11 +323,21 @@ begin
             if RST = '1' then
                 current_grid_position <= DEFAULT_GRID_POSITION;
                 current_state <= STATE_START;
+                
+                current_command <= 0;
+                current_player <= 0;
+                
+                last_command_update <= (others => (others => 0));
+                players_dol <= (others => (others => '1'));
             else
                 case current_state is
                     when STATE_START =>
                         out_write <= '0';
                         out_block <= (EMPTY_BLOCK, 0, 0, millisecond, 0);
+                        
+
+                        current_command <= 0;
+                        current_player <= 0;
 
                         death_mode_activated <= '0';
 
@@ -382,7 +428,7 @@ begin
                     when STATE_PLAYERS_INIT =>
                         players_position(current_player) <= INIT_PLAYER_POSITION(current_player);
                         players_status(current_player).direction <= INIT_PLAYER_DIRECTION(current_player);
-                        players_status(current_player).id <= (current_player + players_status(current_player).id) mod 7;
+                        players_status(current_player).id <= (current_player + players_status(current_player).id + 1) mod 7;
 
                         current_state <= STATE_PLAYERS_INIT_ROTATE;
                     when STATE_PLAYERS_INIT_ROTATE =>
@@ -400,11 +446,11 @@ begin
                             players_alive(L) := players_status(L).is_alive;
                         end loop;
 
-                        if NB_PLAYERS_ALIVE(players_alive) <= 1 then
-                            current_state <= STATE_GAME_OVER;
-                        else
+                        --if NB_PLAYERS_ALIVE(players_alive) <= 1 then
+                            --current_state <= STATE_GAME_OVER;
+                        --else
                             current_state <= STATE_GAME_UPDATE_TIME_REMAINING;
-                        end if;
+                        --end if;
                     when STATE_GAME_UPDATE_TIME_REMAINING =>
                         if death_mode_activated = '0' then
                             time_remaining <= NORMAL_MODE_DURATION - millisecond;
@@ -419,7 +465,7 @@ begin
                             when '0' =>
                                 real_speed := players_speed(current_player);
                             when '1' =>
-                                real_speed := -players_speed(current_player);
+                                real_speed := -1 * players_speed(current_player);
                             when others => null;
                         end case;
         
@@ -430,30 +476,33 @@ begin
                             if in_io_state = '1' then
                                 case current_command is
                                      when D_UP =>
-                                        --if in_dol(D_UP) = '1' or player_wall_hack = '1' then
+                                        if players_dol(current_player)(D_UP) = '1' or players_wall_hack(current_player) = '1' then
                                             players_position(current_player).X <= (players_position(current_player).X - real_speed) mod VECTOR_PRECISION_X;
-                                        --end if;
+                                        end if;
                                         players_status(current_player).direction <= D_UP;
                                         
                                     when D_DOWN =>
-                                        --if in_dol(D_DOWN) = '1' or player_wall_hack = '1' then
+                                        if players_dol(current_player)(D_DOWN) = '1' or players_wall_hack(current_player) = '1' then
                                             players_position(current_player).X <= (players_position(current_player).X + real_speed) mod VECTOR_PRECISION_X;
-                                        --end if;
+                                        end if;
                                         players_status(current_player).direction <= D_DOWN;
                                     when D_LEFT =>
-                                        --if in_dol(D_LEFT) = '1' or player_wall_hack = '1' then
+                                        if players_dol(current_player)(D_LEFT) = '1' or players_wall_hack(current_player) = '1' then
                                             players_position(current_player).Y <= (players_position(current_player).Y - real_speed) mod VECTOR_PRECISION_Y;
-                                        --end if;
+                                        end if;
                                         players_status(current_player).direction <= D_LEFT;
                                     when D_RIGHT =>
-                                        --if in_dol(D_RIGHT) = '1' or player_wall_hack = '1' then
+                                        if players_dol(current_player)(D_RIGHT) = '1' or players_wall_hack(current_player) = '1' then
                                             players_position(current_player).Y <= (players_position(current_player).Y + real_speed) mod VECTOR_PRECISION_Y;
-                                        --end if;
+                                        end if;
                                         players_status(current_player).direction <= D_RIGHT;
                                     when 4 =>
                                         if (players_nb_bombs(current_player) < players_max_bombs(current_player)) and (players_can_plant_bomb(current_player) = '1') then
                                             players_nb_bombs(current_player) <= players_nb_bombs(current_player) + 1;
-                                            --(PLANT_NORMAL_BOMB, in_millisecond);
+                                            out_write <= '1';
+                                            current_grid_position <= players_grid_position(current_player);
+                                            out_block <= (BOMB_BLOCK_0, 0, 0, millisecond, current_player);
+                                            players_status(current_player).direction <= D_LEFT;
                                         end if;
                                     when others => null;
                                 end case;
@@ -474,8 +523,11 @@ begin
                         end if;
                         
                     when STATE_UPDATE_PLAYERS_POSITION_ROTATE_COMMAND =>
+                        out_write <= '0';
+                        current_grid_position <= DEFAULT_GRID_POSITION;
+                        
                         if current_command = NB_CONTROLS - 1 then
-                            current_state <= STATE_CHECK_DEATH_MODE;
+                            current_state <= STATE_GAME_GRID_UPDATE;
                             current_command <= 0;
                             current_player <= 0;
                         else
@@ -483,6 +535,37 @@ begin
                             current_player <= 0;
                             current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
                         end if;
+                     
+                    when STATE_GAME_GRID_UPDATE =>
+                        current_state <= STATE_CHECK_PLAYERS_DOG;
+                    
+                    when STATE_GAME_GRID_UPDATE_ROTATE =>
+                        if current_grid_position = DEFAULT_LAST_GRID_POSITION then
+                            current_grid_position <= DEFAULT_GRID_POSITION;
+                            current_state <= STATE_CHECK_DEATH_MODE;
+                        else
+                            current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                            current_state <= STATE_GAME_GRID_UPDATE_WAIT;
+                        end if;
+                        
+                    when STATE_GAME_GRID_UPDATE_WAIT =>
+                        current_state <= STATE_GAME_GRID_UPDATE;
+                        
+                    when STATE_CHECK_PLAYERS_DOG =>
+                        for K in 0 to NB_PLAYERS - 1 loop
+                            for L in 0 to 3 loop
+                                if GIVE_BLOCK_POSITION(players_grid_position(K), current_grid_position) = L then
+                                    if in_read_block.category = EMPTY_BLOCK then
+                                        players_dol(K)(L) <= '1';
+                                    else
+                                        players_dol(K)(L) <= '0';
+                                    end if;
+                                end if;
+                            end loop;
+                        end loop;
+                        
+                        current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
+                        
                     when STATE_CHECK_DEATH_MODE =>
                         if millisecond > NORMAL_MODE_DURATION then
                             death_mode_activated <= '1';
@@ -491,6 +574,7 @@ begin
                         end if;
                         current_state <= STATE_GAME;
                     ----------------------------------------------------------------
+                    
                     when STATE_GAME_OVER =>
                         time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION - millisecond;
 
