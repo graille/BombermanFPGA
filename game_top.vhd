@@ -57,6 +57,8 @@ architecture behavioral of GAME_TOP is
     signal gc_out_request_player      : integer range 0 to NB_PLAYERS - 1 := 0;
 
     signal gc_out_write_pixel : std_logic := '0';
+    
+    signal gc_active : std_logic := '0';
 
     -- Game controller
     signal gu_in_read_block     : block_type := DEFAULT_BLOCK;
@@ -259,10 +261,11 @@ begin
         in_player_position     => gc_in_player_position,
         in_player_status       => gc_in_player_status,
 
-        in_new_image        => VGA_VS_O_t,
+        in_new_image        => gc_active,
         
         in_time_remaining   => gu_out_time_remaining
     );
+    gc_active <= VGA_HS_O_t;
 
     I_PIXEL_RAM: entity work.pixel_ram
     port map (

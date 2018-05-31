@@ -70,7 +70,7 @@ package PROJECT_PARAMS_PKG is
         (x"1D", x"43", x"6C", x"75"), -- Forward controls
         (x"23", x"4b", x"7A", x"74"), -- Right controls
         (x"1B", x"42", x"69", x"72"), -- Back controls
-        (x"1C", x"3b", x"71", x"66"), -- Left controls
+        (x"1C", x"3b", x"71", x"6B"), -- Left controls
 
         (x"24", x"44", x"7d", x"70") -- Bomb controls
     );

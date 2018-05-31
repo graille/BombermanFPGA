@@ -19,9 +19,6 @@ package PROJECT_POS_FUNCTIONS_PKG is
 
     function DECR_POSITION_LINEAR(pos: in grid_position)
         return grid_position;
-
-    function NB_PLAYERS_ALIVE(players_alive: in std_logic_vector)
-        return integer;
 end package;
 
 package body PROJECT_POS_FUNCTIONS_PKG is
@@ -112,17 +109,4 @@ package body PROJECT_POS_FUNCTIONS_PKG is
         
         return result;
     end INCR_POSITION_CIRCULAR;
-
-    --
-    function NB_PLAYERS_ALIVE(players_alive: in std_logic_vector)
-        return integer is
-        variable nb_alive : integer range 0 to NB_PLAYERS - 1 := 0;
-    begin
-        for k in 0 to NB_PLAYERS - 1 loop
-            if players_alive(k) = '1' then
-                nb_alive := nb_alive + 1;
-            end if;
-        end loop;
-        return nb_alive;
-    end NB_PLAYERS_ALIVE;
 end package body;

@@ -265,7 +265,9 @@ begin
                         current_player_position <= DEFAULT_VECTOR_POSITION;
 
                         -- Go to next state
-                        current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                        if in_new_image = '1' then
+                            current_state <= WAIT_BOTTOM_CHARACTER_STATE;
+                        end if;
                     ----------------------------------------------
                     -- BOTTOM BAR
                     ----------------------------------------------

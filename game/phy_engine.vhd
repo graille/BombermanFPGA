@@ -28,9 +28,9 @@ begin
         end if;
 
         if (t_pos.y + t_dim.y) > o_pos.y then
-            collisions(D_RIGHT) <= '1';
+            collisions(D_LEFT) <= '1';
         else
-            collisions(D_RIGHT) <= '0';
+            collisions(D_LEFT) <= '0';
         end if;
 
         if (o_pos.x + o_dim.x) > t_pos.x then
@@ -40,14 +40,15 @@ begin
         end if;
 
         if (o_pos.y + o_dim.y) > t_pos.y then
-            collisions(D_LEFT) <= '1';
+            collisions(D_RIGHT) <= '1';
         else
-            collisions(D_LEFT) <= '0';
+            collisions(D_RIGHT) <= '0';
         end if;
     end process;
 
-    is_colliding <= collisions(0)
-        and collisions(1)
-        and collisions(2)
-        and collisions(3);
+--    is_colliding <= collisions(0)
+--        and collisions(1)
+--        and collisions(2)
+--        and collisions(3);
+        is_colliding <= '1';
 end behavioral;
