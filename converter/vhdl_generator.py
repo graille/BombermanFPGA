@@ -122,8 +122,8 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     # Architecture
     l += ["architecture behavioral of " + entity_name + " is"]
-    l += [TAB + "subtype word_t is std_logic_vector(" + str(max_w*bits_precision - 1) + " downto 0);"]
-    l += [TAB + "type memory_t is array(" + str(total_rows - 1) + " downto 0) of word_t;"]
+    l += [TAB + "subtype word_t is std_logic_vector(0 to " + str(max_w*bits_precision - 1) + ");"]
+    l += [TAB + "type memory_t is array(0 to " + str(total_rows - 1) + ") of word_t;"]
 
     l += [""]
 
@@ -170,7 +170,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l += [TAB + "constant rom : memory_t := init_mem;"]
     l += [TAB + 'signal real_row : integer range 0 to ' + str(total_rows - 1) + ' := 0;']
-    l += [TAB + "signal out_color_reg : std_logic_vector(" + str(max_w*bits_precision - 1) + " downto 0) := (others => '0');"]
+    l += [TAB + "signal out_color_reg : std_logic_vector(0 to " + str(max_w*bits_precision - 1) + ") := (others => '0');"]
 
     l += ["begin"]
 
@@ -247,7 +247,7 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
     l += [TAB + "end process;"]
 
-    l+= [TAB + "out_color <= out_color_reg(((in_sprite_col + 1) * " + str(bits_precision) + ") - 1 downto (in_sprite_col * " + str(bits_precision) + "));"]
+    l+= [TAB + "out_color <= out_color_reg((in_sprite_col * " + str(bits_precision) + ") to ((in_sprite_col + 1) * " + str(bits_precision) + ") - 1);"]
 
     l += ["end behavioral;"]
 

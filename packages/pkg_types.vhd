@@ -9,6 +9,8 @@ package PROJECT_TYPES_PKG is
     -- Timer types
     subtype millisecond_count is integer range 0 to 2**(MILLISECOND_COUNTER_PRECISION) - 1;
     subtype clk_count is integer range 0 to 2**(CLK_COUNTER_PRECISION) - 1;
+    type time_count_2d_array_type is array(natural range <>, natural range <>) of millisecond_count;
+    type time_count_array_type is array(natural range <>) of millisecond_count;
 
     type array_logic is array(natural range <>) of std_logic;
     type td_array_logic is array(natural range <>, natural range <>) of std_logic;
@@ -28,7 +30,7 @@ package PROJECT_TYPES_PKG is
 	    state		    : state_type;                                 -- The state of animation of the block
 	    direction		: direction_type;                             -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
         last_update     : millisecond_count;                          -- Last time the block has been updated, usefull to manage animations
-        owner : natural range 0 to NB_PLAYERS - 1;                    -- Only used by bombs and explosions to assign points to players
+        owner           : natural range 0 to NB_PLAYERS - 1;          -- Only used by bombs and explosions to assign points to players
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
     constant DEFAULT_BLOCK : block_type := (0, 0, 0, 0, 0);
@@ -76,7 +78,7 @@ package PROJECT_TYPES_PKG is
         id              : character_id_type;
 	    state		    : state_type;
 	    direction		: direction_type; -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
-	    
+
 	    is_activated    : std_logic;
 	    is_alive        : std_logic;
     end record;
