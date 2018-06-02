@@ -31,9 +31,10 @@ package PROJECT_TYPES_PKG is
 	    direction		: direction_type;                             -- 0 : Up, 1 : Right, 2 : Down, 3 : Left : See PROJECT_RECT_PKG package
         last_update     : millisecond_count;                          -- Last time the block has been updated, usefull to manage animations
         owner           : natural range 0 to NB_PLAYERS - 1;          -- Only used by bombs and explosions to assign points to players
+        power           : natural range 0 to 15;
     end record;
     type td_array_cube_types is array(natural range <>, natural range <>) of block_type;
-    constant DEFAULT_BLOCK : block_type := (0, 0, 0, 0, 0);
+    constant DEFAULT_BLOCK : block_type := (0, 0, 0, 0, 0, 0);
 
     -- Info :
     -- O-------> Y axis

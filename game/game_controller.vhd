@@ -208,6 +208,10 @@ architecture behavioral of game_controller is
             STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER,
             STATE_UPDATE_PLAYERS_POSITION_ROTATE_COMMAND,
 
+            -- Check and update players status
+            STATE_UPDATE_PLAYERS_STATUS,
+            STATE_UPDATE_PLAYERS_STATUS_ROTATE,
+
             -- Check and plant bombs
             STATE_GAME_PLAYERS_BOMB_CHECK,
             STATE_GAME_PLAYERS_BOMB_CHECK_ROTATE,
@@ -216,15 +220,11 @@ architecture behavioral of game_controller is
             STATE_GAME_GRID_UPDATE,
             STATE_GAME_GRID_UPDATE_WAIT,
             STATE_GAME_GRID_UPDATE_ROTATE,
-                STATE_GAME_GRID_UPDATE_PLAYERS,
-                -- When we check a cells, we have to check adjacent cells
-                STATE_GAME_GRID_UPDATE_CHECK_CENTER,
-                STATE_GAME_GRID_UPDATE_CHECK_TOP,
-                STATE_GAME_GRID_UPDATE_CHECK_LEFT,
-                STATE_GAME_GRID_UPDATE_CHECK_BOTTOM,
-                STATE_GAME_GRID_UPDATE_CHECK_RIGHT,
+                STATE_GAME_GRID_UPDATE_PLAYERS_ATTRIBUTES,
+                STATE_GAME_GRID_UPDATE_PLAYERS_DOG,
 
-                STATE_CHECK_PLAYERS_DOG,
+                STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION,
+                STATE_GAME_GRID_CHECK_BOMBS_RESULT,
 
             -- Death mode : final mode
             STATE_CHECK_DEATH_MODE,
@@ -238,6 +238,7 @@ architecture behavioral of game_controller is
     signal current_state : game_state_type := STATE_START;
     signal current_grid_position : grid_position := DEFAULT_GRID_POSITION;
     signal death_mode_activated : std_logic := '0';
+
 begin
     -- Grid position updater
     out_grid_position <= current_grid_position;
@@ -471,6 +472,7 @@ begin
 
                         current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
 
+                        -- Update players position
                     when STATE_UPDATE_PLAYERS_POSITION =>
                         case players_inversed_commands(current_player) is
                             when '0' =>
@@ -529,7 +531,6 @@ begin
 
                         -- Switch to next state
                         current_state <= STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER;
-
                     when STATE_UPDATE_PLAYERS_POSITION_WAIT =>
                         current_state <= STATE_UPDATE_PLAYERS_POSITION;
                     when STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER =>
@@ -540,13 +541,12 @@ begin
                             current_player <= current_player + 1;
                             current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
                         end if;
-
                     when STATE_UPDATE_PLAYERS_POSITION_ROTATE_COMMAND =>
                         out_write <= '0';
                         current_grid_position <= DEFAULT_GRID_POSITION;
 
                         if current_command = NB_CONTROLS - 1 then
-                            current_state <= STATE_GAME_GRID_UPDATE;
+                            current_state <= STATE_UPDATE_PLAYERS_STATUS;
                             current_command <= 0;
                             current_player <= 0;
                         else
@@ -555,22 +555,10 @@ begin
                             current_state <= STATE_UPDATE_PLAYERS_POSITION_WAIT;
                         end if;
 
-                    when STATE_GAME_GRID_UPDATE =>
-                        current_state <= STATE_CHECK_PLAYERS_DOG;
+                        -- Update players status
 
-                    when STATE_GAME_GRID_UPDATE_ROTATE =>
-                        if current_grid_position = DEFAULT_LAST_GRID_POSITION then
-                            current_grid_position <= DEFAULT_GRID_POSITION;
-                            current_state <= STATE_CHECK_DEATH_MODE;
-                        else
-                            current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
-                            current_state <= STATE_GAME_GRID_UPDATE_WAIT;
-                        end if;
-
-                    when STATE_GAME_GRID_UPDATE_WAIT =>
-                        current_state <= STATE_GAME_GRID_UPDATE;
-
-                    when STATE_GAME_GRID_UPDATE_PLAYERS =>
+                        -- Update players status
+                    when STATE_UPDATE_PLAYERS_STATUS =>
                         if (millisecond - players_god_mode_activation(current_player)) mod PLAYER_GOD_MOD_DURATION = 0 then
                             players_god_mode(current_player) <= '0';
                         end if;
@@ -587,6 +575,32 @@ begin
                             players_inversed_commands(current_player) <= '0';
                         end if;
 
+                        current_state <= STATE_UPDATE_PLAYERS_STATUS_ROTATE;
+                    
+                    when STATE_UPDATE_PLAYERS_STATUS_ROTATE =>
+                        if current_player = NB_PLAYERS - 1 then
+                            current_player <= 0;
+                            current_state <= STATE_GAME_GRID_UPDATE;
+                        else
+                            current_player <= current_player + 1;
+                            current_state <= STATE_UPDATE_PLAYERS_STATUS;
+                        end if;
+
+                        -- Update grid
+                    when STATE_GAME_GRID_UPDATE =>
+                        current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOG;
+                    when STATE_GAME_GRID_UPDATE_ROTATE =>
+                        if current_grid_position = DEFAULT_LAST_GRID_POSITION then
+                            current_grid_position <= DEFAULT_GRID_POSITION;
+                            current_state <= STATE_CHECK_DEATH_MODE;
+                        else
+                            current_grid_position <= INCR_POSITION_LINEAR(current_grid_position);
+                            current_state <= STATE_GAME_GRID_UPDATE_WAIT;
+                        end if;
+                    when STATE_GAME_GRID_UPDATE_WAIT =>
+                        current_state <= STATE_GAME_GRID_UPDATE;
+
+                    when STATE_GAME_GRID_UPDATE_PLAYERS_ATTRIBUTES =>
                         if players_collision(current_player) = '1' and players_status(current_player).is_alive = '1' then
                             case in_read_block.category is
                                 when EXPLOSION_BLOCK_JUNCTION | EXPLOSION_BLOCK_MIDDLE | EXPLOSION_BLOCK_END =>
@@ -632,8 +646,7 @@ begin
                                 when others => null;
                             end case;
                         end if;
-
-                    when STATE_CHECK_PLAYERS_DOG =>
+                    when STATE_GAME_GRID_UPDATE_PLAYERS_DOG =>
                         for K in 0 to NB_PLAYERS - 1 loop
                             collision_block_position := GIVE_BLOCK_POSITION(players_grid_position(K), current_grid_position);
 
@@ -646,7 +659,10 @@ begin
                             end if;
                         end loop;
                         current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
-
+                        
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION => null;
+                    when STATE_GAME_GRID_CHECK_BOMBS_RESULT => null;
+                    
                     when STATE_CHECK_DEATH_MODE =>
                         if millisecond > NORMAL_MODE_DURATION then
                             death_mode_activated <= '1';
