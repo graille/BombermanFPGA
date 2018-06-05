@@ -3561,7 +3561,7 @@ architecture behavioral of characters_sprite_rom is
 
     constant rom : memory_t := init_mem;
     signal real_row : integer range 0 to 3359 := 0;
-    signal out_color_reg : std_logic_vector(199 downto 0) := (others => '0');
+    signal out_color_reg : std_logic_vector(0 to 199) := (others => '0');
 begin
     process(in_sprite_id, in_sprite_row, in_sprite_col, in_sprite_state, in_sprite_direction)
     begin
@@ -3773,5 +3773,5 @@ begin
             out_color_reg <= rom(real_row);
         end if;
     end process;
-    out_color <= out_color_reg(((in_sprite_col + 1) * 5) - 1 downto (in_sprite_col * 5));
+    out_color <= out_color_reg((in_sprite_col * 5) to ((in_sprite_col + 1) * 5) - 1);
 end behavioral;
