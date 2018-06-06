@@ -228,6 +228,9 @@ begin
         constant VECTOR_HEIGHT_FACTOR : integer := (FRAME_HEIGHT * 2**16) / VECTOR_PRECISION_X;
         constant VECTOR_WIDTH_FACTOR : integer := (FRAME_WIDTH * 2**16) / VECTOR_PRECISION_Y;
         
+        constant CHARACTER_X_HITBOX_SPACE : integer := CHARACTER_GRAPHIC_HEIGHT - ((DEFAULT_PLAYER_HITBOX_X * VECTOR_HEIGHT_FACTOR) / 2**16);
+        constant CHARACTER_Y_HITBOX_SPACE : integer := (CHARACTER_GRAPHIC_WIDTH - ((DEFAULT_PLAYER_HITBOX_Y * VECTOR_WIDTH_FACTOR) / 2**16)) / 2;
+        
         variable waiting_clocks : integer range 0 to 15 := 2;
     begin
         if rising_edge(clk) then
@@ -417,8 +420,8 @@ begin
                             current_state <= WAIT_CHARACTER_STATE;
                         end if;
                     when WAIT_CHARACTER_PIXEL_STATE =>
-                        current_pixel_position.X <= ((current_player_position.X * VECTOR_HEIGHT_FACTOR) / 2**16)  + current_character_position.X;
-                        current_pixel_position.Y <= ((current_player_position.Y * VECTOR_WIDTH_FACTOR) / 2**16)  + current_character_position.Y;
+                        current_pixel_position.X <= ((current_player_position.X * VECTOR_HEIGHT_FACTOR) / 2**16)  + current_character_position.X - CHARACTER_X_HITBOX_SPACE;
+                        current_pixel_position.Y <= ((current_player_position.Y * VECTOR_WIDTH_FACTOR) / 2**16)  + current_character_position.Y - CHARACTER_Y_HITBOX_SPACE;
                         
                         current_state <= WRITE_CHARACTER_PIXEL_STATE;
                     when WRITE_CHARACTER_PIXEL_STATE =>

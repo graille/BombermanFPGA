@@ -53,8 +53,6 @@ architecture behavioral of game_controller is
 
     -- Physics engines
     signal players_collision : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '0');
-    
-    signal current_block : block_type := DEFAULT_BLOCK;
 
     ---------------------------------------------------------------------------
     -- Commands
@@ -192,9 +190,12 @@ architecture behavioral of game_controller is
             STATE_UPDATE_PLAYERS_STATUS,
             STATE_UPDATE_PLAYERS_STATUS_ROTATE,
 
-            -- Check and plant bombs
-            STATE_GAME_PLAYERS_BOMB_CHECK,
-            STATE_GAME_PLAYERS_BOMB_CHECK_ROTATE,
+            -- Update players degrees of liberty
+            STATE_GAME_PLAYERS_DOL,
+            STATE_GAME_PLAYERS_DOL_WAIT,
+            STATE_GAME_PLAYERS_DOL_GET_BLOCK,
+            STATE_GAME_PLAYERS_DOL_ROTATE_POSITION,
+            STATE_GAME_PLAYERS_DOL_ROTATE_PLAYER,
 
             -- Check and update each blocks of the grid
             STATE_GAME_GRID_UPDATE,
@@ -203,13 +204,15 @@ architecture behavioral of game_controller is
                 STATE_GAME_GRID_UPDATE_ANIMATION,
                 STATE_GAME_GRID_UPDATE_ANIMATION_WAIT,
                 
-                STATE_GAME_GRID_UPDATE_PLAYERS_ATTRIBUTES,
                 
-                STATE_GAME_GRID_UPDATE_PLAYERS_DOL,
-                STATE_GAME_GRID_UPDATE_PLAYERS_DOL_WAIT,
-                STATE_GAME_GRID_UPDATE_PLAYERS_DOL_ROTATE_PLAYER,
+                STATE_GAME_GRID_UPDATE_PLAYERS_ATTRIBUTES,
 
+                -- Explose bombs if needed
                 STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION,
+                STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_WAIT,
+                STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_GET_BLOCK,
+                STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_ROTATE_POSITION,
+                
                 STATE_GAME_GRID_CHECK_BOMBS_RESULT,
 
             -- Death mode : final mode
@@ -294,6 +297,8 @@ begin
         variable nb_players_alive : integer range 0 to NB_PLAYERS - 1;
         
         variable waiting_clocks : integer range 0 to 15 := 2;
+        
+        variable position_state : integer range 0 to 3 := 0;
     begin
         if rising_edge(CLK) then
             if RST = '1' then
@@ -511,8 +516,6 @@ begin
                                 end case;
                             end if;
                         end if;
-                        -- Reinit players DOL
-                        players_dol <= (others => (others => '1'));
 
                         -- Switch to next state
                         current_state <= STATE_UPDATE_PLAYERS_POSITION_ROTATE_PLAYER;
@@ -542,37 +545,88 @@ begin
 
                         -- Update players status
                     when STATE_UPDATE_PLAYERS_STATUS =>
-                        if (millisecond - players_god_mode_activation(current_player)) mod PLAYER_GOD_MOD_DURATION = 0 then
-                            players_god_mode(current_player) <= '0';
-                        end if;
+--                        if (millisecond - players_god_mode_activation(current_player)) >= PLAYER_GOD_MOD_DURATION then
+--                            players_god_mode(current_player) <= '0';
+--                            players_god_mode_activation(current_player) <= 0;
+--                        end if;
 
-                        if (millisecond - players_wall_hack_activation(current_player)) mod PLAYER_WALL_HACK_DURATION = 0 then
-                            players_wall_hack(current_player) <= '0';
-                        end if;
+--                        if (millisecond - players_wall_hack_activation(current_player)) >= PLAYER_WALL_HACK_DURATION then
+--                            players_wall_hack(current_player) <= '0';
+--                            players_wall_hack_activation(current_player) <= 0;
+--                        end if;
 
-                        if (millisecond - players_no_bombs_activation(current_player)) mod PLAYER_NO_BOMBS_DURATION = 0 then
-                            players_can_plant_bomb(current_player) <= '1';
-                        end if;
+--                        if (millisecond - players_no_bombs_activation(current_player)) >= PLAYER_NO_BOMBS_DURATION then
+--                            players_can_plant_bomb(current_player) <= '1';
+--                            players_no_bombs_activation(current_player) <= 0;
+--                        end if;
 
-                        if (millisecond - players_inversed_commands_activation(current_player)) mod PLAYER_INVERSED_COMMANDS_DURATION = 0 then
-                            players_inversed_commands(current_player) <= '0';
-                        end if;
+--                        if (millisecond - players_inversed_commands_activation(current_player)) >= PLAYER_INVERSED_COMMANDS_DURATION then
+--                            players_inversed_commands(current_player) <= '0';
+--                             players_inversed_commands_activation(current_player) <= 0;
+--                        end if;
 
                         current_state <= STATE_UPDATE_PLAYERS_STATUS_ROTATE;
-                    
                     when STATE_UPDATE_PLAYERS_STATUS_ROTATE =>
                         if current_player = NB_PLAYERS - 1 then
                             current_player <= 0;
-                            current_state <= STATE_GAME_GRID_UPDATE;
+                            current_state <= STATE_GAME_PLAYERS_DOL_GET_BLOCK;
                         else
                             current_player <= current_player + 1;
                             current_state <= STATE_UPDATE_PLAYERS_STATUS;
                         end if;
 
+                        -- Update players DOL       
+                    when STATE_GAME_PLAYERS_DOL =>
+                        if (players_collision(current_player) = '0') or (in_read_block.category = EMPTY_BLOCK) then
+                            players_dol(current_player)(position_state) <= '1';
+                        else
+                            players_dol(current_player)(position_state) <= '0';
+                        end if;
+                        
+                        current_state <= STATE_GAME_PLAYERS_DOL_ROTATE_POSITION;
+                    
+                    when STATE_GAME_PLAYERS_DOL_WAIT =>
+                        waiting_clocks := waiting_clocks - 1;
+                        
+                        if waiting_clocks = 0 then
+                            waiting_clocks := 2;
+                            current_state <= STATE_GAME_PLAYERS_DOL;
+                        end if;     
+                    
+                    when STATE_GAME_PLAYERS_DOL_GET_BLOCK =>
+                        case position_state is
+                            when D_UP => current_grid_position <= (players_grid_position(current_player).i - 1, players_grid_position(current_player).j);
+                            when D_RIGHT => current_grid_position <= (players_grid_position(current_player).i, players_grid_position(current_player).j + 1);
+                            when D_DOWN => current_grid_position <= (players_grid_position(current_player).i + 1, players_grid_position(current_player).j);
+                            when D_LEFT => current_grid_position <= (players_grid_position(current_player).i, players_grid_position(current_player).j - 1);
+                            when others => null;
+                        end case;
+                        
+                        current_state <= STATE_GAME_PLAYERS_DOL_WAIT;
+                    
+                    when STATE_GAME_PLAYERS_DOL_ROTATE_POSITION => 
+                        if position_state = 3 then
+                            position_state := 0;
+                            current_state <= STATE_GAME_PLAYERS_DOL_ROTATE_PLAYER;
+                        else
+                            position_state := (position_state + 1) mod 4;
+                            current_state <= STATE_GAME_PLAYERS_DOL_GET_BLOCK;
+                        end if;
+                        
+                    when STATE_GAME_PLAYERS_DOL_ROTATE_PLAYER =>
+                        position_state := 0;
+                        
+                        if current_player = NB_PLAYERS - 1 then
+                            current_player <= 0;
+                            current_state <= STATE_GAME_GRID_UPDATE;
+                        else
+                            current_player <= current_player + 1;
+                            current_state <= STATE_GAME_PLAYERS_DOL_GET_BLOCK;
+                        end if;
+
                         -- Update grid
                     when STATE_GAME_GRID_UPDATE =>
                         current_state <= STATE_GAME_GRID_UPDATE_ANIMATION;
-                       
                     when STATE_GAME_GRID_UPDATE_ROTATE =>
                         if current_grid_position = DEFAULT_LAST_GRID_POSITION then
                             current_grid_position <= DEFAULT_GRID_POSITION;
@@ -583,37 +637,37 @@ begin
                         end if;
                     when STATE_GAME_GRID_UPDATE_WAIT =>
                         waiting_clocks := waiting_clocks - 1;
-                        current_block <= in_read_block;
                         
                         if waiting_clocks = 0 then
                             waiting_clocks := 2;
                             current_state <= STATE_GAME_GRID_UPDATE;
                         end if;
+                   
+                        -- Animate blocks
                     when STATE_GAME_GRID_UPDATE_ANIMATION =>
-                        case current_block.category is
+                        case in_read_block.category is
                             when BOMB_BLOCK_0 =>
-                                if (millisecond - current_block.last_update) > 700 then
+                                if (millisecond - in_read_block.last_update) > 700 then
                                     out_block <= (
-                                        current_block.category,
-                                        (current_block.state + 1) mod 2,
-                                        current_block.direction,
+                                        in_read_block.category,
+                                        (in_read_block.state + 1) mod 2,
+                                        in_read_block.direction,
                                         millisecond,
-                                        current_block.owner,
-                                        current_block.power);
+                                        in_read_block.owner,
+                                        in_read_block.power);
                                     out_write <= '1';
                                 end if;
                             when others =>
                                 out_write <= '0';
                         end case;
                         current_state <= STATE_GAME_GRID_UPDATE_ANIMATION_WAIT;
-                        
                     when STATE_GAME_GRID_UPDATE_ANIMATION_WAIT =>
                         out_write <= '0';
-                        current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL;
+                        current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
 
                     when STATE_GAME_GRID_UPDATE_PLAYERS_ATTRIBUTES =>
                         if players_collision(current_player) = '1' and players_status(current_player).is_alive = '1' then
-                            case current_block.category is
+                            case in_read_block.category is
                                 when EXPLOSION_BLOCK_JUNCTION | EXPLOSION_BLOCK_MIDDLE | EXPLOSION_BLOCK_END =>
                                     if players_lives(current_player) <= 1 and players_god_mode(current_player) = '0' then
                                         players_status(current_player).is_alive <= '0';
@@ -656,48 +710,6 @@ begin
                                     end if;
                                 when others => null;
                             end case;
-                        end if;
-                        
-                    when STATE_GAME_GRID_UPDATE_PLAYERS_DOL_WAIT =>
-                        waiting_clocks := waiting_clocks - 1;
-                        
-                        if waiting_clocks = 0 then
-                            waiting_clocks := 2;
-                            current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL;
-                        end if;
-                        
-                    when STATE_GAME_GRID_UPDATE_PLAYERS_DOL =>
-                        if current_grid_position.i = players_grid_position(current_player).i then
-                            if current_grid_position.j = (players_grid_position(current_player).j + 1) then
-                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
-                                    players_dol(current_player)(D_RIGHT) <= '0';
-                                end if;
-                            elsif current_grid_position.j = (players_grid_position(current_player).j - 1) then
-                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
-                                    players_dol(current_player)(D_LEFT) <= '0';
-                                end if;
-                            end if;
-                        elsif current_grid_position.j = players_grid_position(current_player).j then
-                            if current_grid_position.i = (players_grid_position(current_player).i + 1) then
-                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
-                                    players_dol(current_player)(D_DOWN) <= '0';
-                                end if;
-                            elsif current_grid_position.i = (players_grid_position(current_player).i - 1) then
-                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
-                                    players_dol(current_player)(D_UP) <= '0';
-                                end if;
-                            end if;
-                        end if;
-                        
-                        current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL_ROTATE_PLAYER;
-                    
-                    when STATE_GAME_GRID_UPDATE_PLAYERS_DOL_ROTATE_PLAYER =>
-                        if current_player = NB_PLAYERS - 1 then
-                            current_player <= 0;
-                            current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
-                        else
-                            current_player <= current_player + 1;
-                            current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL_WAIT;
                         end if;
                         
                     when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION => null;

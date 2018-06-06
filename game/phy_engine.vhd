@@ -16,33 +16,19 @@ entity collision_detector_rect_rect is
 end collision_detector_rect_rect;
 
 architecture behavioral of collision_detector_rect_rect is
-    signal collisions : std_logic_vector(3 downto 0) := (others => '0');
 begin
     process(clk)
     begin
         if rising_edge(clk) then
-            collisions <= (others => '0');
-            
-            if (r2_pos.x + r2_dim.x) > r1_pos.x and r2_pos.x < r1_pos.x then
-                collisions(D_UP) <= '1';
-            end if;
-            
-            if (r1_pos.y + r1_dim.y) > r2_pos.y and r1_pos.y < r2_pos.y then
-                collisions(D_RIGHT) <= '1';
-            end if;
-            
-            if (r1_pos.x + r1_dim.x) > r2_pos.x and r1_pos.x < r2_pos.x then
-                collisions(D_DOWN) <= '1';
-            end if;
-            
-            if (r2_pos.y + r2_dim.y) > r1_pos.y and r2_pos.y < r1_pos.y then
-                collisions(D_LEFT) <= '1';
+            -- From https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
+            if r1_pos.Y < r2_pos.Y + r2_dim.Y and
+                r1_pos.Y + r1_dim.Y > r2_pos.Y and
+                r1_pos.X < r2_pos.X + r2_dim.X and
+                r1_dim.X + r1_pos.X > r2_pos.X then
+                are_colliding <= '1';
+            else
+                are_colliding <= '0';
             end if;
         end if;
     end process;
-
-    are_colliding <= collisions(D_UP)
-        or collisions(D_RIGHT)
-        or collisions(D_DOWN)
-        or collisions(D_LEFT);
 end behavioral;
