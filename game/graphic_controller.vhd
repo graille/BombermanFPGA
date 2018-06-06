@@ -124,9 +124,6 @@ architecture behavioral of graphic_controller is
     signal time_remaining : millisecond_count := 0;
     
     signal font_current_color : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '0');
-    
-    -- State
-    signal actualize_empty : std_logic := '1';
 begin
     -- This ROM contains all blocks sprites
     RESSOURCES_ROM_INSTANCE:entity work.ressources_sprite_rom
@@ -246,8 +243,6 @@ begin
                 current_player_position <= DEFAULT_VECTOR_POSITION;
 
                 current_player_nb <= 0;
-                
-                actualize_empty <= '1';
             else
                 time_remaining <= in_time_remaining / 1000;
                 
@@ -369,9 +364,9 @@ begin
                         current_block_position <= DEFAULT_BLOCK_POSITION;
 
                         if current_grid_position = DEFAULT_LAST_GRID_POSITION then
-                            current_state <= WAIT_CHARACTER_STATE;
+                            current_state <= END_STATE;
                         else
-                            current_state <= WAIT_BLOCK_STATE;
+                            current_state <= WAIT_CHARACTER_STATE;
                         end if;
                     when WAIT_BLOCK_STATE =>
                         waiting_clocks := waiting_clocks - 1;
@@ -380,20 +375,13 @@ begin
                         if waiting_clocks = 0 then
                             waiting_clocks := 2;
                             current_state <= WAIT_BLOCK_PIXEL_STATE;
-                        else
-                            current_state <= WAIT_BLOCK_STATE;
                         end if;
                     when WAIT_BLOCK_PIXEL_STATE =>
                         current_pixel_position.X <= (current_grid_position.i * BLOCK_GRAPHIC_HEIGHT) + current_block_position.X;
                         current_pixel_position.Y <= (current_grid_position.j * BLOCK_GRAPHIC_WIDTH) + current_block_position.Y;
                     
-                        if current_block.category = EMPTY_BLOCK and actualize_empty = '0' then
-                            current_state <= ROTATE_BLOCK_STATE;
-                        else 
-                            current_state <= WRITE_BLOCK_PIXEL_STATE;
-                        end if;
+                        current_state <= WRITE_BLOCK_PIXEL_STATE;
                     when WRITE_BLOCK_PIXEL_STATE =>
-                        -- Update state
                         if current_block_position = DEFAULT_LAST_BLOCK_POSITION then
                             current_state <= ROTATE_BLOCK_STATE;
                         elsif current_block_position.Y = BLOCK_GRAPHIC_WIDTH - 1 then
@@ -403,6 +391,7 @@ begin
                             current_block_position <= (current_block_position.X, current_block_position.Y + 1);
                             current_state <= WAIT_BLOCK_PIXEL_STATE;
                         end if;
+                        
                     ----------------------------------------------
                     -- CHARACTERS
                     ----------------------------------------------
@@ -411,9 +400,9 @@ begin
                         current_character_position <= DEFAULT_CHARACTER_POSITION;
 
                         if current_player_nb = NB_PLAYERS - 1 then
-                            current_state <= END_STATE;
+                            current_state <= WAIT_BLOCK_STATE;
                         else
-                            current_state <= WAIT_CHARACTER_STATE;
+                            current_state <= WAIT_BLOCK_STATE;
                         end if;
                     when WAIT_CHARACTER_STATE =>
                         waiting_clocks := waiting_clocks - 1;
@@ -444,7 +433,6 @@ begin
                             current_state <= WAIT_CHARACTER_PIXEL_STATE;
                         end if;
                     when END_STATE =>
-                        actualize_empty <= not(actualize_empty);
                         current_state <= START_STATE;
                     when others => null;
                 end case;

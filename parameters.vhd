@@ -28,16 +28,7 @@ package PROJECT_PARAMS_PKG is
     -- Screen parameters
     constant FRAME_WIDTH : natural := 800;
     constant FRAME_HEIGHT : natural := 600;
-
-    -- Vectors
-    constant VECTOR_PRECISION_Y : integer := 2**12;
-    constant VECTOR_PRECISION_X : integer := VECTOR_PRECISION_Y * FRAME_HEIGHT / FRAME_WIDTH; -- Ratio conservation
-
-    constant DEFAULT_BLOCK_SIZE_X : integer := VECTOR_PRECISION_X / (GRID_ROWS + 1); -- Last column reserved
-    constant DEFAULT_BLOCK_SIZE_Y : integer := VECTOR_PRECISION_Y / GRID_COLS;
-    constant DEFAULT_PLAYER_HITBOX_X : integer := DEFAULT_BLOCK_SIZE_X * 2 / 3;
-    constant DEFAULT_PLAYER_HITBOX_Y : integer := DEFAULT_BLOCK_SIZE_Y * 2 / 3;
-
+    
     -- Graphic elements
     constant BLOCK_GRAPHIC_WIDTH : integer := FRAME_WIDTH / GRID_COLS;
     constant BLOCK_GRAPHIC_HEIGHT : integer := FRAME_HEIGHT / (GRID_ROWS + 1);
@@ -47,6 +38,15 @@ package PROJECT_PARAMS_PKG is
 
     constant FONT_GRAPHIC_HEIGHT : integer := 37;
     constant FONT_GRAPHIC_WIDTH : integer := 28;
+    
+    -- Vectors
+    constant VECTOR_PRECISION_Y : integer := 2**12;
+    constant VECTOR_PRECISION_X : integer := VECTOR_PRECISION_Y * FRAME_HEIGHT / FRAME_WIDTH; -- Ratio conservation
+
+    constant DEFAULT_BLOCK_SIZE_X : integer := VECTOR_PRECISION_X / (GRID_ROWS + 1); -- Last column reserved
+    constant DEFAULT_BLOCK_SIZE_Y : integer := VECTOR_PRECISION_Y / GRID_COLS;
+    constant DEFAULT_PLAYER_HITBOX_X : integer := DEFAULT_BLOCK_SIZE_X * 2 / 3;
+    constant DEFAULT_PLAYER_HITBOX_Y : integer := DEFAULT_BLOCK_SIZE_Y * 2 / 3;
 
     -- O-----> Y axis
     -- |

@@ -199,9 +199,9 @@ def generate_rom(bits_precision, colors_list, images_description, images_names, 
 
                         direction_a = direction
                         direction_a = "D_UP" if direction == 0 else direction_a
-                        direction_a = "D_LEFT" if direction == 1 else direction_a
+                        direction_a = "D_RIGHT" if direction == 1 else direction_a
                         direction_a = "D_DOWN" if direction == 2 else direction_a
-                        direction_a = "D_RIGHT" if direction == 3 else direction_a
+                        direction_a = "D_LEFT" if direction == 3 else direction_a
 
                         l += [TAB * 7 + "when " + str(direction_a) + " =>"]
 
