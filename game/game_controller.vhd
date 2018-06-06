@@ -86,7 +86,7 @@ architecture behavioral of game_controller is
     signal players_power : players_power_type := (others => 1);
 
     type players_bombs_counter is array(NB_PLAYERS - 1 downto 0) of integer range 0 to 31;
-    signal players_max_bombs : players_bombs_counter := (others => 1);
+    signal players_max_bombs : players_bombs_counter := (others => 10);
     signal players_nb_bombs : players_bombs_counter := (others => 0);
     signal players_can_plant_bomb : std_logic_vector(NB_PLAYERS - 1 downto 0) := (others => '1');
 
@@ -204,7 +204,10 @@ architecture behavioral of game_controller is
                 STATE_GAME_GRID_UPDATE_ANIMATION_WAIT,
                 
                 STATE_GAME_GRID_UPDATE_PLAYERS_ATTRIBUTES,
+                
                 STATE_GAME_GRID_UPDATE_PLAYERS_DOL,
+                STATE_GAME_GRID_UPDATE_PLAYERS_DOL_WAIT,
+                STATE_GAME_GRID_UPDATE_PLAYERS_DOL_ROTATE_PLAYER,
 
                 STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION,
                 STATE_GAME_GRID_CHECK_BOMBS_RESULT,
@@ -654,32 +657,48 @@ begin
                                 when others => null;
                             end case;
                         end if;
+                        
+                    when STATE_GAME_GRID_UPDATE_PLAYERS_DOL_WAIT =>
+                        waiting_clocks := waiting_clocks - 1;
+                        
+                        if waiting_clocks = 0 then
+                            waiting_clocks := 2;
+                            current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL;
+                        end if;
+                        
                     when STATE_GAME_GRID_UPDATE_PLAYERS_DOL =>
-                        for K in 0 to NB_PLAYERS - 1 loop
-                            if current_grid_position.i = players_grid_position(K).i then
-                                if current_grid_position.j = (players_grid_position(K).j + 1) then
-                                    if players_collision(K) = '1' and current_block.category /= EMPTY_BLOCK then
-                                        players_dol(K)(D_RIGHT) <= '0';
-                                    end if;
-                                elsif current_grid_position.j = (players_grid_position(K).j - 1) then
-                                    if players_collision(K) = '1' and current_block.category /= EMPTY_BLOCK then
-                                        players_dol(K)(D_LEFT) <= '0';
-                                    end if;
+                        if current_grid_position.i = players_grid_position(current_player).i then
+                            if current_grid_position.j = (players_grid_position(current_player).j + 1) then
+                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
+                                    players_dol(current_player)(D_RIGHT) <= '0';
                                 end if;
-                            elsif current_grid_position.j = players_grid_position(K).j then
-                                if current_grid_position.i = (players_grid_position(K).i + 1) then
-                                    if players_collision(K) = '1' and current_block.category /= EMPTY_BLOCK then
-                                        players_dol(K)(D_UP) <= '0';
-                                    end if;
-                                elsif current_grid_position.i = (players_grid_position(K).i - 1) then
-                                    if players_collision(K) = '1' and current_block.category /= EMPTY_BLOCK then
-                                        players_dol(K)(D_DOWN) <= '0';
-                                    end if;
+                            elsif current_grid_position.j = (players_grid_position(current_player).j - 1) then
+                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
+                                    players_dol(current_player)(D_LEFT) <= '0';
                                 end if;
                             end if;
-                        end loop;
+                        elsif current_grid_position.j = players_grid_position(current_player).j then
+                            if current_grid_position.i = (players_grid_position(current_player).i + 1) then
+                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
+                                    players_dol(current_player)(D_DOWN) <= '0';
+                                end if;
+                            elsif current_grid_position.i = (players_grid_position(current_player).i - 1) then
+                                if players_collision(current_player) = '1' and current_block.category /= EMPTY_BLOCK then
+                                    players_dol(current_player)(D_UP) <= '0';
+                                end if;
+                            end if;
+                        end if;
                         
-                        current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
+                        current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL_ROTATE_PLAYER;
+                    
+                    when STATE_GAME_GRID_UPDATE_PLAYERS_DOL_ROTATE_PLAYER =>
+                        if current_player = NB_PLAYERS - 1 then
+                            current_player <= 0;
+                            current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
+                        else
+                            current_player <= current_player + 1;
+                            current_state <= STATE_GAME_GRID_UPDATE_PLAYERS_DOL_WAIT;
+                        end if;
                         
                     when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION => null;
                     when STATE_GAME_GRID_CHECK_BOMBS_RESULT => null;

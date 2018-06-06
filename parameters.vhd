@@ -41,12 +41,12 @@ package PROJECT_PARAMS_PKG is
     
     -- Vectors
     constant VECTOR_PRECISION_Y : integer := 2**12;
-    constant VECTOR_PRECISION_X : integer := VECTOR_PRECISION_Y * FRAME_HEIGHT / FRAME_WIDTH; -- Ratio conservation
+    constant VECTOR_PRECISION_X : integer := (VECTOR_PRECISION_Y * FRAME_HEIGHT) / FRAME_WIDTH; -- Ratio conservation
 
     constant DEFAULT_BLOCK_SIZE_X : integer := VECTOR_PRECISION_X / (GRID_ROWS + 1); -- Last column reserved
     constant DEFAULT_BLOCK_SIZE_Y : integer := VECTOR_PRECISION_Y / GRID_COLS;
-    constant DEFAULT_PLAYER_HITBOX_X : integer := DEFAULT_BLOCK_SIZE_X * 2 / 3;
-    constant DEFAULT_PLAYER_HITBOX_Y : integer := DEFAULT_BLOCK_SIZE_Y * 2 / 3;
+    constant DEFAULT_PLAYER_HITBOX_X : integer := (DEFAULT_BLOCK_SIZE_X * 2) / 3;
+    constant DEFAULT_PLAYER_HITBOX_Y : integer := (DEFAULT_BLOCK_SIZE_Y * 2) / 3;
 
     -- O-----> Y axis
     -- |
