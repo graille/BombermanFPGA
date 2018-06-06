@@ -64,7 +64,6 @@ architecture behavioral of game_controller is
     -- Player values
     ---------------------------------------------------------------------------
     constant PLAYER_INITIAL_POSITION : vector := DEFAULT_VECTOR_POSITION;
-
     constant PLAYER_DEFAULT_SPEED : integer := 2;
 
     signal current_player : integer range 0 to NB_PLAYERS - 1 := 0;
@@ -213,6 +212,9 @@ architecture behavioral of game_controller is
                 STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_GET_BLOCK,
                 STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_ROTATE_POSITION,
                 
+                STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_SAVE_POSITION,
+                STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_RESTORE_POSITION,
+                
                 STATE_GAME_GRID_CHECK_BOMBS_RESULT,
 
             -- Death mode : final mode
@@ -225,9 +227,8 @@ architecture behavioral of game_controller is
     );
 
     signal current_state : game_state_type := STATE_START;
-    signal current_grid_position : grid_position := DEFAULT_GRID_POSITION;
+    signal current_grid_position, waiting_grid_position : grid_position := DEFAULT_GRID_POSITION;
     signal death_mode_activated : std_logic := '0';
-
 begin
     -- Grid position updater
     out_grid_position <= current_grid_position;
@@ -299,6 +300,7 @@ begin
         variable waiting_clocks : integer range 0 to 15 := 2;
         
         variable position_state : integer range 0 to 3 := 0;
+        variable explosion_block_type : block_category_type;
     begin
         if rising_edge(CLK) then
             if RST = '1' then
@@ -334,7 +336,7 @@ begin
                         current_command <= 0;
                         current_player <= 0;
                         out_write <= '0';
-                        out_block <= (EMPTY_BLOCK, 0, 0, millisecond, 0, 0);
+                        out_block <= (EMPTY_BLOCK, 0, 0, millisecond, millisecond, 0, 0);
 
                         death_mode_activated <= '0';
 
@@ -344,7 +346,7 @@ begin
                         current_state <= STATE_MAP_REINIT;
                     ----------------------------------------------------------------
                     when STATE_MAP_REINIT =>
-                        out_block <= (EMPTY_BLOCK, 0, 0, 0, 0, 0);
+                        out_block <= (EMPTY_BLOCK, 0, 0, 0, 0, 0, 0);
                         out_write <= '1';
 
                         if current_grid_position = DEFAULT_LAST_GRID_POSITION then
@@ -357,7 +359,7 @@ begin
                         current_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER;
                     when STATE_MAP_BUILD_UNBREAKABLE_BORDER =>
                         -- Place block
-                        out_block <= (UNBREAKABLE_BLOCK_1, 0, 0, millisecond, 0, 0);
+                        out_block <= (UNBREAKABLE_BLOCK_1, 0, 0, millisecond, millisecond, 0, 0);
                         out_write <= '1';
 
                         current_state <= STATE_MAP_BUILD_UNBREAKABLE_BORDER_ROTATE;
@@ -382,7 +384,7 @@ begin
                             and current_grid_position /= (1, GRID_COLS - 2) and current_grid_position /= (1,GRID_COLS - 3) and current_grid_position /= (2,GRID_COLS - 2)
                         then
                             out_write <= '1';
-                            out_block <= (BREAKABLE_BLOCK_0, 0, 0, millisecond, 0, 0);
+                            out_block <= (BREAKABLE_BLOCK_0, 0, 0, millisecond, millisecond, 0, 0);
                         else
                             out_write <= '0';
                         end if;
@@ -405,7 +407,7 @@ begin
                             and current_grid_position.i /= 0 and current_grid_position.i /= GRID_ROWS - 1
                             and current_grid_position.j /= 0 and current_grid_position.j /= GRID_COLS - 1
                         then
-                            out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, 0, 0);
+                            out_block <= (UNBREAKABLE_BLOCK_2, 0, 0, millisecond, millisecond, 0, 0);
                             out_write <= '1';
                         else
                             out_write <= '0';
@@ -506,7 +508,7 @@ begin
                                         then
                                             -- Write the bomb on the grid
                                             current_grid_position <= players_grid_position(current_player);
-                                            out_block <= (BOMB_BLOCK_0, 0, 0, millisecond, current_player, 0);
+                                            out_block <= (BOMB_BLOCK_0, 0, 0, millisecond, millisecond, current_player, 0);
                                             out_write <= '1';
 
                                             -- Update player parameters
@@ -652,10 +654,12 @@ begin
                                         in_read_block.category,
                                         (in_read_block.state + 1) mod 2,
                                         in_read_block.direction,
+                                        in_read_block.creation,
                                         millisecond,
                                         in_read_block.owner,
                                         in_read_block.power);
                                     out_write <= '1';
+                                else null;
                                 end if;
                             when others =>
                                 out_write <= '0';
@@ -712,8 +716,82 @@ begin
                             end case;
                         end if;
                         
-                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION => null;
-                    when STATE_GAME_GRID_CHECK_BOMBS_RESULT => null;
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION =>
+                        case in_read_block.category is
+                            when EXPLOSION_BLOCK_JUNCTION | EXPLOSION_BLOCK_MIDDLE =>
+                                out_write <= '1';
+                                current_grid_position <= waiting_grid_position;
+                                
+                                -- Determine next explosion block
+                                if in_read_block.power = 1 then
+                                    explosion_block_type := EXPLOSION_BLOCK_END;
+                                else
+                                    explosion_block_type := EXPLOSION_BLOCK_MIDDLE;
+                                end if;
+                                
+                                -- Update the block
+                                case in_read_block.category is 
+                                    when EXPLOSION_BLOCK_JUNCTION =>
+                                        case position_state is
+                                            when D_LEFT | D_RIGHT => out_block <= (explosion_block_type, 0, D_RIGHT, millisecond, millisecond, in_read_block.owner, in_read_block.power - 1);
+                                            when D_UP | D_DOWN => out_block <= (explosion_block_type, 0, D_UP, millisecond, millisecond, in_read_block.owner, in_read_block.power - 1);
+                                        end case;
+                                    when EXPLOSION_BLOCK_MIDDLE =>
+                                        case position_state is
+                                            when D_LEFT | D_RIGHT => 
+                                                if in_read_block.direction = D_LEFT or in_read_block.direction = D_RIGHT then
+                                                    out_block <= (explosion_block_type, 0, D_RIGHT, millisecond, millisecond, in_read_block.owner, in_read_block.power - 1);
+                                                else
+                                                    out_write <= '0';
+                                                end if;
+                                            when D_UP | D_DOWN => 
+                                                if in_read_block.direction = D_UP or in_read_block.direction = D_DOWN then
+                                                    out_block <= (explosion_block_type, 0, D_UP, millisecond, millisecond, in_read_block.owner, in_read_block.power - 1);
+                                                else
+                                                    out_write <= '0';
+                                                end if;
+                                        end case;
+                                    when others => null;
+                                end case;
+                            when others => null;
+                        end case;
+                        
+                        current_state <= STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_ROTATE_POSITION;      
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_WAIT =>
+                        waiting_clocks := waiting_clocks - 1;
+                        
+                        if waiting_clocks = 0 then
+                            waiting_clocks := 2;
+                            current_state <= STATE_GAME_GRID_UPDATE;
+                        end if;
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_GET_BLOCK =>
+                        case position_state is
+                            when D_UP => current_grid_position <= (players_grid_position(current_player).i - 1, players_grid_position(current_player).j);
+                            when D_RIGHT => current_grid_position <= (players_grid_position(current_player).i, players_grid_position(current_player).j + 1);
+                            when D_DOWN => current_grid_position <= (players_grid_position(current_player).i + 1, players_grid_position(current_player).j);
+                            when D_LEFT => current_grid_position <= (players_grid_position(current_player).i, players_grid_position(current_player).j - 1);
+                            when others => null;
+                        end case;
+                    
+                        current_state <= STATE_GAME_PLAYERS_DOL_WAIT;
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_ROTATE_POSITION =>
+                        out_write <= '0';
+                        
+                        if position_state = 3 then
+                            position_state := 0;
+                            current_state <= STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_RESTORE_POSITION;
+                        else
+                            position_state := (position_state + 1) mod 4;
+                            current_state <= STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_GET_BLOCK;
+                        end if;
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_SAVE_POSITION =>
+                        waiting_grid_position <= current_grid_position;
+                        
+                        current_state <= STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_GET_BLOCK;
+                    when STATE_GAME_GRID_CHECK_BOMBS_PROPAGATION_RESTORE_POSITION =>
+                        current_grid_position <= waiting_grid_position;
+                        
+                        current_state <= STATE_GAME_GRID_UPDATE_ROTATE;
                     
                     when STATE_CHECK_DEATH_MODE =>
                         if millisecond > NORMAL_MODE_DURATION then
@@ -725,9 +803,7 @@ begin
                     ----------------------------------------------------------------
 
                     when STATE_GAME_OVER =>
-                        time_remaining <= NORMAL_MODE_DURATION + DEATH_MODE_DURATION - millisecond;
-
-                        if millisecond > NORMAL_MODE_DURATION + DEATH_MODE_DURATION then
+                        if millisecond > (NORMAL_MODE_DURATION + DEATH_MODE_DURATION) then
                             current_state <= STATE_START;
                         end if;
                     when others => null;
