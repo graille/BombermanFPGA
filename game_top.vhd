@@ -30,12 +30,7 @@ entity GAME_TOP is
 
         -- Keyboard inputs
         PS2_CLK : in std_logic;
-        PS2_DATA : in std_logic;
-
-        SEG : out std_logic_vector(6 downto 0);
-        AN : out std_logic_vector(7 downto 0);
-        DP : out std_logic;
-        UART_TXD : out std_logic
+        PS2_DATA : in std_logic
     );
 end GAME_TOP;
 
@@ -99,34 +94,6 @@ architecture behavioral of GAME_TOP is
 
     signal io_requested_command : integer range 0 to NB_CONTROLS - 1;
     signal io_requested_player : integer range 0 to NB_PLAYERS - 1;
-
-    -- Component
---    component keyboard_top
---    port(
---        CLK100MHZ : in std_logic;
---        PS2_CLK : in std_logic;
---        PS2_DATA : in std_logic;
-
---        SEG : out std_logic_vector(6 downto 0);
---        AN : out std_logic_vector(7 downto 0);
---        out_keycode : out std_logic_vector(31 downto 0);
---        DP : out std_logic;
---        UART_TXD : out std_logic
---    );
---    end component;
---    component ps2_keyboard IS
---        GENERIC(
---            clk_freq              : INTEGER;
---            debounce_counter_size : INTEGER
---        );      
---        PORT(
---            clk          : IN  STD_LOGIC;             
---            ps2_clk      : IN  STD_LOGIC;          
---            ps2_data     : IN  STD_LOGIC;          
---            ps2_code_new : OUT STD_LOGIC;                     
---            ps2_code     : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
---        ); 
---    END component;
 
     component PS2_Ctrl is
       generic (FilterSize : positive := 8);
