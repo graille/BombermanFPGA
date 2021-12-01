@@ -170,8 +170,10 @@ begin
     );
 
     -- Out color multiplexer
-    process(block_current_color, character_current_color, font_current_color, current_state, current_pixel_position, current_player_status)
+    process(block_current_color, character_current_color, font_current_color, current_state, current_pixel_position, current_player_status, current_grid_position)
     begin
+        out_pixel_value <= BACKGROUND_COLOR;
+        out_write_pixel <= '0';
         case current_state is
             when WRITE_BOTTOM_CHARACTER_PIXEL_STATE =>
                 if character_current_color /= TRANSPARENT_COLOR then
@@ -202,7 +204,6 @@ begin
                     out_pixel_value <= block_current_color;
                 else
                     out_write_pixel <= '1';
-                    out_pixel_value <= BACKGROUND_COLOR;
                 end if;
             when WRITE_CHARACTER_PIXEL_STATE =>
                 if character_current_color /= TRANSPARENT_COLOR then
@@ -210,11 +211,9 @@ begin
                     out_pixel_value <= character_current_color;
                 else
                     out_write_pixel <= '0';
-                    out_pixel_value <= BACKGROUND_COLOR;
                 end if;
             when others =>
                 out_write_pixel <= '0';
-                out_pixel_value <= BACKGROUND_COLOR;
         end case;
     end process;
 

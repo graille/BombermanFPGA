@@ -1,0 +1,11 @@
+# JetBrain software files & directories
+.idea/
+
+# Python files
+*.pyc
+__pycache__/
+.venv/
+env/
+
+# Vivado files and projects
+vivado/
