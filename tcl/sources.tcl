@@ -23,7 +23,6 @@ __add_source_element ${ROOT_DIRECTORY}/modules/memory/pixel_ram.vhd
 
 __add_source_element ${ROOT_DIRECTORY}/modules/prng/simple_prng.vhd
 
-__add_source_element ${ROOT_DIRECTORY}/modules/clock/clk_divider.vhd
 __add_source_element ${ROOT_DIRECTORY}/modules/clock/millisecond_counter.vhd
 
 # IP

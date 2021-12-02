@@ -13,6 +13,7 @@ package PROJECT_PARAMS_PKG is
     ---------------------------------------------------------------------------
     -- General parameters
     ---------------------------------------------------------------------------
+    
     constant NB_PLAYERS : integer := 4;
     constant GRID_ROWS : integer := 14;
     constant GRID_COLS : integer := 20;
@@ -75,16 +76,16 @@ package PROJECT_PARAMS_PKG is
         (x"24", x"44", x"7d", x"70") -- Bomb controls
     );
     
+    ---------------------------------------------------------------------------
+    -- Graphic parameters
+    ---------------------------------------------------------------------------
 
-    ---------------------------------------------------------------------------
-    -- Graphical parameters
-    ---------------------------------------------------------------------------
     -- Colors
     constant TRANSPARENT_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := (others => '1');
     constant BACKGROUND_COLOR : std_logic_vector(COLOR_BIT_PRECISION - 1 downto 0) := "00011";
 
+    -- VGA
     -- More details and values : http://web.mit.edu/6.111/www/s2004/NEWKIT/vga.shtml
-    --
     constant H_FP : natural := 40; --H front porch width (pixels)
     constant H_PW : natural := 128; --H sync pulse width (pixels)
     constant H_MAX : natural := 1056; --H total period (pixels)
